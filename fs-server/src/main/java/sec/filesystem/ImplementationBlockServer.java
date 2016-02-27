@@ -2,19 +2,29 @@ package sec.filesystem;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import types.Data_t;
-import types.Id_t;
-import types.Pk_t;
-import types.Sig_t;
+import types.*;
 
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
+
+    // Basic Block Structure for Testing 
+    private Block block;
+    private void storeBlock(Block b) {
+        block = b;
+    }
 
     public ImplementationBlockServer() throws RemoteException {
     }
 
     @Override
     public Data_t get(Id_t id) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return block.getData();
+    }
+
+    //Temporary "put_k" method without Signature or PubKey support 
+    @Override
+    public Id_t put_k(Data_t data) throws RemoteException {
+        storeBlock(new Block(data));
+        return block.getID();
     }
 
     @Override
