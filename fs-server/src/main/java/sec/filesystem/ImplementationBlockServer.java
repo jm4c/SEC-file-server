@@ -1,30 +1,76 @@
 package sec.filesystem;
 
+import java.io.*;
+import java.math.BigInteger;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.SecureRandom;
+import java.util.HashMap;
 import types.*;
 
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
-    // Basic Block Structure for Testing 
-    private Block block;
-    private void storeBlock(Block b) {
-        block = b;
-    }
+    // Block table that will contain data blocks.
+    private final HashMap<String, String> blockTable;
 
     public ImplementationBlockServer() throws RemoteException {
+        blockTable = new HashMap<>();
+    }
+
+    private void storeBlock(Id_t id, String s) throws UnsupportedEncodingException {
+        blockTable.put(new String(id.getValue(), "UTF-8"), s);
+    }
+
+    private String retrieveBlock(Id_t id) throws UnsupportedEncodingException {
+        return blockTable.get(new String(id.getValue(), "UTF-8"));
+    }
+
+    private void validateSignature() throws RemoteException {
+        throw new UnsupportedOperationException("Not supported yet.");
+
+    }
+
+    private byte[] calculateBlockID() throws RemoteException {
+        SecureRandom random = new SecureRandom();
+        byte bytes[] = new byte[20];
+        random.nextBytes(bytes);
+        return bytes;
     }
 
     @Override
     public Data_t get(Id_t id) throws RemoteException {
-        return block.getData();
+        Block b = null;
+        try {
+            String s = retrieveBlock(id);
+            FileInputStream fin = new FileInputStream("./files/" + s + ".dat");
+            ObjectInputStream ois = new ObjectInputStream(fin);
+            b = (Block) ois.readObject();
+            ois.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //verifyIntegrity(b);
+        return b.getData();
     }
 
     //Temporary "put_k" method without Signature or PubKey support 
     @Override
     public Id_t put_k(Data_t data) throws RemoteException {
-        storeBlock(new Block(data));
-        return block.getID();
+        //validateSignature();
+        Id_t id = new Id_t(calculateBlockID());
+        Block b = new Block(data);
+        try {
+            SecureRandom random = new SecureRandom();
+            String s = new BigInteger(130, random).toString(32);
+            FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
+            ObjectOutputStream oos = new ObjectOutputStream(fout);
+            oos.writeObject(b);
+            oos.close();
+            storeBlock(id, s);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return id;
     }
 
     @Override

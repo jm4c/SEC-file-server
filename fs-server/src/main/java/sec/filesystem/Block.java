@@ -1,31 +1,26 @@
 package sec.filesystem;
 
-import java.util.Random;
+import java.io.Serializable;
 import types.*;
 
-public class Block {
+public class Block implements Serializable {
 
-    private Id_t blockID;
+    private Pk_t blockPKey;
     private Sig_t blockSig;
     private Data_t blockData;
 
     public Block(Data_t data) {
-        byte[] b = new byte[20];
-        new Random().nextBytes(b);
-        this.blockID = new Id_t(b);
         this.blockData = data;
     }
 
     public Block(Data_t data, Sig_t sig, Pk_t pkey) {
-        byte[] b = new byte[20];
-        new Random().nextBytes(b);
-        this.blockID = new Id_t(b);
+        this.blockPKey = pkey;
         this.blockSig = sig;
         this.blockData = data;
     }
 
-    public Id_t getID() {
-        return blockID;
+    public Pk_t getPKey() {
+        return blockPKey;
     }
 
     public Sig_t getSig() {
