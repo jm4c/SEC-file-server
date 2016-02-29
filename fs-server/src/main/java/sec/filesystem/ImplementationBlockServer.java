@@ -10,7 +10,9 @@ import types.*;
 
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
-    // Block table that will contain data blocks.
+	private static final long serialVersionUID = 1L;
+	
+	// Block table that will contain data blocks.
     private final HashMap<String, String> blockTable;
 
     public ImplementationBlockServer() throws RemoteException {
@@ -42,7 +44,15 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         Block b = null;
         try {
             String s = retrieveBlock(id);
-            FileInputStream fin = new FileInputStream("./files/" + s + ".dat");
+            FileInputStream fin = null;
+            
+            //fixes file not found exception in eclipse/windows
+//            try {
+            	fin = new FileInputStream("./files/" + s + "/" + s + ".dat");
+//            }catch (FileNotFoundException fnfe){
+//            	fin = new FileInputStream(".\\files\\" + s + ".dat");
+//            }
+            
             ObjectInputStream ois = new ObjectInputStream(fin);
             b = (Block) ois.readObject();
             ois.close();
@@ -62,7 +72,13 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         try {
             SecureRandom random = new SecureRandom();
             String s = new BigInteger(130, random).toString(32);
-            FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
+            FileOutputStream fout = null;
+            
+            new File("./files/" + s + "/").mkdirs();
+        
+            fout = new FileOutputStream("./files/" + s + "/" + s + ".dat");
+
+            
             ObjectOutputStream oos = new ObjectOutputStream(fout);
             oos.writeObject(b);
             oos.close();
