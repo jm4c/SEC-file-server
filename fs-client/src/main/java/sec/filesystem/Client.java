@@ -1,4 +1,4 @@
-package main.java.sec.filesystem;
+package sec.filesystem;
 
 import java.io.File;
 import java.io.FileInputStream;
