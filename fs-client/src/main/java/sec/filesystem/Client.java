@@ -72,6 +72,7 @@ public class Client {
         return publicKey;
     }
 
+    
     protected Id_t fs_init() throws NotBoundException, NoSuchAlgorithmException, IOException {
         KeyPair kp = CryptoUtils.setKeyPair();
 
@@ -79,6 +80,7 @@ public class Client {
         setPublicKey(kp);
         setClientID();
 
+    	
         Registry myReg = LocateRegistry.getRegistry("localhost");
         server = (InterfaceBlockServer) myReg.lookup("fs.Server");
         System.out.println(server.greeting() + "\n");
@@ -146,17 +148,20 @@ public class Client {
             System.out.println("Storing a block on the block server...");
 //            c.setClientID(obj.put_k(new Data_t(data.getBytes("UTF-8"))));
 
+            
 //            System.out.println(c.getClientID().getValue().toString().substring(3));
             if (!c.getClientID().equals(server.put_k(new Data_t(data.getBytes("UTF-8")), null, c.getPublicKey()))) {
                 throw new Exception("Client's ID does not match main block ID!");
             }
             System.out.println("Done!\n");
 
+            
 //            System.out.println("Retrieving a block on the block server...");
 //            data = new String(obj.get(c.getClientID()).getValue(), "UTF-8");
 //            System.out.println("Done!\n");
 //
 //            System.out.println("DATA: " + data + "\n");
+
         } catch (Exception ex) {
             System.out.println("FileSystem.Client exception: " + ex.getMessage());
             ex.printStackTrace();
