@@ -22,11 +22,11 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     private void storeBlock(Id_t id, String s) throws UnsupportedEncodingException {
-        blockTable.put(id.getValue().toString(), s);
+        blockTable.put(id.getValue(), s);
     }
 
     private String retrieveBlock(Id_t id) throws UnsupportedEncodingException {
-        return blockTable.get(id.getValue().toString());
+        return blockTable.get(id.getValue());
     }
 
     private void validateSignature() throws RemoteException {
@@ -52,21 +52,17 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         try {
             String s = retrieveBlock(id);
             FileInputStream fin = null;
-            
-            //fixes file not found exception in eclipse/windows
-//            try {
-            	fin = new FileInputStream("./files/" + s + "/" + s + ".dat");
-//            }catch (FileNotFoundException fnfe){
-//            	fin = new FileInputStream(".\\files\\" + s + ".dat");
-//            }
-            
+
+            fin = new FileInputStream("./files/" + s + "/" + s + ".dat");
+
             ObjectInputStream ois = new ObjectInputStream(fin);
             b = (Block) ois.readObject();
             ois.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //verifyIntegrity(b);
+       
+        //TODO verifyIntegrity(b);
         return b.getData();
     }
 
@@ -74,14 +70,15 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws RemoteException {
         
         try {
-        	//validateSignature();
+        	//TODO validateSignature();
             Id_t id = calculateBlockID(public_key);
+            System.out.println(id.getValue());
             Block b = new Block(data, signature, public_key);
             
 //            SecureRandom random = new SecureRandom();
 //            String s = new BigInteger(130, random).toString(32);
-            String s = id.getValue().toString();
-            s = s.substring(3); // removes [B@ from the beginning of the string
+            String s = id.getValue();
+
             FileOutputStream fout = null;
             
             new File("./files/" + s + "/").mkdirs();
