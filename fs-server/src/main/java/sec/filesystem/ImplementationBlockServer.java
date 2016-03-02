@@ -1,14 +1,15 @@
 package sec.filesystem;
 
 import java.io.*;
-import java.math.BigInteger;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.HashMap;
+
+import exception.InvalidSignatureException;
 import types.*;
 import utils.HashUtils;
+import utils.CryptoUtils;
 
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
@@ -29,18 +30,8 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         return blockTable.get(id.getValue());
     }
 
-    private void validateSignature() throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet.");
-
-    }
-
-
     private Id_t calculateBlockID(Pk_t publicKey) throws NoSuchAlgorithmException, IOException {
-//        SecureRandom random = new SecureRandom();
-//        byte bytes[] = new byte[20];
-//        random.nextBytes(bytes);
-//        return bytes;
-//    	System.out.println(publicKey.getValue().toString());
+    	
     	byte[] hash = HashUtils.hash(publicKey.getValue().toString(), null);
 
         return new Id_t(hash);
@@ -67,34 +58,41 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     @Override
-    public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws RemoteException {
-        
-        try {
-        	//TODO validateSignature();
-            Id_t id = calculateBlockID(public_key);
-            System.out.println(id.getValue());
-            Block b = new Block(data, signature, public_key);
-            
-//            SecureRandom random = new SecureRandom();
-//            String s = new BigInteger(130, random).toString(32);
-            String s = id.getValue();
+    public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws RemoteException, InvalidSignatureException {
 
-            FileOutputStream fout = null;
-            
-            new File("./files/" + s + "/").mkdirs();
-        
-            fout = new FileOutputStream("./files/" + s + "/" + s + ".dat");
+        	try {
+				if(!CryptoUtils.verify(data.getValue(), public_key.getValue(), signature.getValue()))
+					throw new InvalidSignatureException("Invalid signature.");
 
-            
-            ObjectOutputStream oos = new ObjectOutputStream(fout);
-            oos.writeObject(b);
-            oos.close();
-            storeBlock(id, s);
-            return id;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+				System.out.println("signature is valid");
+				
+				Id_t id = calculateBlockID(public_key);
+				System.out.println(id.getValue());
+				Block b = new Block(data, signature, public_key);
+				
+
+				String s = id.getValue();
+
+				FileOutputStream fout = null;
+				
+				new File("./files/" + s + "/").mkdirs();
+      
+				fout = new FileOutputStream("./files/" + s + "/" + s + ".dat");
+
+				
+				ObjectOutputStream oos = new ObjectOutputStream(fout);
+				oos.writeObject(b);
+				oos.close();
+				storeBlock(id, s);
+				return id;
+			} catch (InvalidSignatureException ise){
+				ise.printStackTrace();
+				throw ise;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			}
+        
     }
 
 

@@ -71,7 +71,7 @@ public class Client {
     
 
     
-    protected Id_t fs_init() throws NotBoundException, NoSuchAlgorithmException, IOException, InvalidKeyException, SignatureException {
+    protected Id_t fs_init() throws Exception {
         KeyPair kp = CryptoUtils.setKeyPair();
 
         setPrivateKey(kp);
@@ -152,13 +152,16 @@ public class Client {
             
             String data = "The quick brown fox jumps over the lazy dog";
             System.out.println("DATA: " + data + "\n");
+            byte[] serializedData = CryptoUtils.serialize(data);
+            
+            String unsignedData = "Server must refuse, wrong signature used";
 
             System.out.println("Storing a block on the block server...");
 
             System.out.println(c.getClientID().getValue());
             
             //TODO put_k must be inside fs init to set Client's ID
-            if (!c.getClientID().getValue().equals(server.put_k(new Data_t(data.getBytes("UTF-8")), null, c.getPublicKey()).getValue()))
+            if (!c.getClientID().getValue().equals(server.put_k(new Data_t(serializedData), new Sig_t(CryptoUtils.sign(serializedData, c.getPrivateKey())), c.getPublicKey()).getValue()))
             	throw new Exception("Client's ID does not match main block ID!");
             
             System.out.println("Done!\n");
@@ -171,7 +174,6 @@ public class Client {
 //            System.out.println("DATA: " + data + "\n");
 
         } catch (Exception ex) {
-            System.out.println("FileSystem.Client exception: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
