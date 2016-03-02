@@ -4,9 +4,11 @@ import java.io.*;
 import java.math.BigInteger;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HashMap;
 import types.*;
+import utils.HashUtils;
 
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
@@ -20,11 +22,11 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     private void storeBlock(Id_t id, String s) throws UnsupportedEncodingException {
-        blockTable.put(new String(id.getValue(), "UTF-8"), s);
+        blockTable.put(id.getValue().toString(), s);
     }
 
     private String retrieveBlock(Id_t id) throws UnsupportedEncodingException {
-        return blockTable.get(new String(id.getValue(), "UTF-8"));
+        return blockTable.get(id.getValue().toString());
     }
 
     private void validateSignature() throws RemoteException {
@@ -32,11 +34,16 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
     }
 
-    private byte[] calculateBlockID() throws RemoteException {
-        SecureRandom random = new SecureRandom();
-        byte bytes[] = new byte[20];
-        random.nextBytes(bytes);
-        return bytes;
+
+    private Id_t calculateBlockID(Pk_t publicKey) throws NoSuchAlgorithmException, IOException {
+//        SecureRandom random = new SecureRandom();
+//        byte bytes[] = new byte[20];
+//        random.nextBytes(bytes);
+//        return bytes;
+//    	System.out.println(publicKey.getValue().toString());
+    	byte[] hash = HashUtils.hash(publicKey.getValue().toString(), null);
+
+        return new Id_t(hash);
     }
 
     @Override
@@ -63,15 +70,18 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         return b.getData();
     }
 
-    //Temporary "put_k" method without Signature or PubKey support 
     @Override
-    public Id_t put_k(Data_t data) throws RemoteException {
-        //validateSignature();
-        Id_t id = new Id_t(calculateBlockID());
-        Block b = new Block(data);
+    public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws RemoteException {
+        
         try {
-            SecureRandom random = new SecureRandom();
-            String s = new BigInteger(130, random).toString(32);
+        	//validateSignature();
+            Id_t id = calculateBlockID(public_key);
+            Block b = new Block(data, signature, public_key);
+            
+//            SecureRandom random = new SecureRandom();
+//            String s = new BigInteger(130, random).toString(32);
+            String s = id.getValue().toString();
+            s = s.substring(3); // removes [B@ from the beginning of the string
             FileOutputStream fout = null;
             
             new File("./files/" + s + "/").mkdirs();
@@ -83,16 +93,13 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             oos.writeObject(b);
             oos.close();
             storeBlock(id, s);
+            return id;
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
-        return id;
     }
 
-    @Override
-    public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
 
     @Override
     public Id_t put_h(Data_t data) throws RemoteException {

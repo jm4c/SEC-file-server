@@ -5,7 +5,8 @@ import types.*;
 
 public class Block implements Serializable {
 
-    private Pk_t blockPKey;
+	private static final long serialVersionUID = 1L;
+	private Pk_t blockPKey;
     private Sig_t blockSig;
     private Data_t blockData;
 
