@@ -1,13 +1,11 @@
 package types;
 
-import java.security.Signature;
-
 public class Sig_t extends Type_t{
 
 	private static final long serialVersionUID = 1L;
-	public Signature value;
+	public byte[] value;
 
-    public Sig_t(Signature id) {
+    public Sig_t(byte[] id) {
         this.value = id;
     }
     
@@ -20,7 +18,7 @@ public class Sig_t extends Type_t{
     }
     
     @Override
-    public Signature getValue(){
+    public byte[] getValue(){
     	return value;
     }
 }
