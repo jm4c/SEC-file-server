@@ -1,23 +1,25 @@
 package types;
 
+import static javax.xml.bind.DatatypeConverter.printHexBinary;
+
 public class Id_t extends Type_t{
 
 	private static final long serialVersionUID = 1L;
-	public byte[] value;
+	public String value;
 
-    public Id_t(byte[] id) {
-        this.value = id;
+    public Id_t(byte[] hash) {
+        this.value = printHexBinary(hash);
     }
     
     @Override
     public void print(){
     	System.out.println();
-        System.out.println("Client ID: " + value.toString());
+        System.out.println("Client ID: " + value);
 		System.out.println();
     }
     
     @Override
-    public byte[] getValue(){
+    public String getValue(){
     	return value;
     }
 }
