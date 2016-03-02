@@ -45,17 +45,17 @@ public class CryptoUtils {
 	    return outputObject;
 	}
 	
-	public static byte[] sign(byte[] encryptedMessage, PrivateKey prvKey) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public static byte[] sign(byte[] unsignedData, PrivateKey prvKey) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		    Signature sig = Signature.getInstance("SHA1withRSA");
 		    sig.initSign(prvKey);
-		    sig.update(encryptedMessage);
+		    sig.update(unsignedData);
 		    return sig.sign();
 		  }
 	
-	public static boolean verify(byte[] encryptedMessage , PublicKey pubKey, byte[] signature) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+	public static boolean verify(byte[] signedData , PublicKey pubKey, byte[] signature) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		    Signature sig = Signature.getInstance("SHA1withRSA");
 		    sig.initVerify(pubKey);
-		   	sig.update(encryptedMessage);
+		   	sig.update(signedData);
 		    return sig.verify(signature);
 		  }
 	
