@@ -21,4 +21,8 @@ public class Buffer_t extends Type_t{
     public byte[] getValue(){
     	return value;
     }
+    
+    public void setValue(byte[] b){
+        this.value = b;
+    }
 }
