@@ -3,10 +3,12 @@ package sec.filesystem;
 import java.io.*;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.util.HashMap;
 
-import exception.InvalidSignatureException;
+import exceptions.InvalidSignatureException;
 import types.*;
 import utils.HashUtils;
 import utils.CryptoUtils;
@@ -29,6 +31,10 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     private String retrieveBlock(Id_t id) throws UnsupportedEncodingException {
         return blockTable.get(id.getValue());
     }
+    
+    private boolean verifyIntegrity (Block b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException{
+    	return CryptoUtils.verify(b.getData().getValue(), b.getPKey().getValue(), b.getSig().getValue());
+    }
 
     private Id_t calculateBlockID(Pk_t publicKey) throws NoSuchAlgorithmException, IOException {
     	
@@ -40,6 +46,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     @Override
     public Data_t get(Id_t id) throws RemoteException {
         Block b = null;
+        // Main/Header block
         try {
             String s = retrieveBlock(id);
             FileInputStream fin = null;
@@ -49,11 +56,16 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             ObjectInputStream ois = new ObjectInputStream(fin);
             b = (Block) ois.readObject();
             ois.close();
+            if(!verifyIntegrity(b))
+            	throw new InvalidSignatureException("Invalid signature.");
+            else
+            	System.out.println("Valid signature");            
         } catch (Exception e) {
             e.printStackTrace();
         }
        
-        //TODO verifyIntegrity(b);
+        
+        
         return b.getData();
     }
 

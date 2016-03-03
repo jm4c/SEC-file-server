@@ -22,4 +22,8 @@ public class Id_t extends Type_t{
     public String getValue(){
     	return value;
     }
+    
+    public boolean equals(Id_t id){
+    	return this.getValue().equals(id.getValue());
+    }
 }

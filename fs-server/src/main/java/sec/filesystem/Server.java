@@ -24,7 +24,7 @@ public class Server {
             Naming.rebind("fs.Server", obj);
             System.out.println("FileSystem.Server is ready...");
         } catch (Exception ex) {
-            System.out.println("FileSystem.Server exception: " + ex.getMessage());
+            System.out.println("FileSystem.Server exceptions: " + ex.getMessage());
             ex.printStackTrace();
         }
     }

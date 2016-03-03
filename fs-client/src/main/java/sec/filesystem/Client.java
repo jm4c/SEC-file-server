@@ -10,7 +10,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -22,7 +21,6 @@ import java.util.logging.Logger;
 import sec.filesystem.InterfaceBlockServer;
 import types.*;
 import utils.CryptoUtils;
-import utils.HashUtils;
 
 public class Client {
 
@@ -163,12 +161,13 @@ public class Client {
     }
     
     public static void main(String[] args) {
+    	Client c = new Client();
         try {
 //            Registry myReg = LocateRegistry.getRegistry("localhost");
 //            InterfaceBlockServer obj = (InterfaceBlockServer) myReg.lookup("fs.Server");
 //            System.out.println(obj.greeting() + "\n");
 
-            Client c = new Client();
+            
             c.fs_init();
 
             //TEMPORARY. Used to test integration with the GUI
@@ -181,7 +180,7 @@ public class Client {
             System.out.println("-------------------------------------------------------------");
 
             String data = "The quick brown fox jumps over the lazy dog";
-            System.out.println("DATA: " + data + "\n");
+            System.out.println("DATA TO SEND: " + data + "\n");
             byte[] serializedData = CryptoUtils.serialize(data);
 
             String unsignedData = "Server must refuse, wrong signature used";
@@ -196,13 +195,17 @@ public class Client {
             }
 
             System.out.println("Done!\n");
-
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        try{
             //TODO retrieve missing block
-//            System.out.println("Retrieving a block on the block server...");
-//            data = new String(obj.get(c.getClientID()).getValue(), "UTF-8");
-//            System.out.println("Done!\n");
-//
-//            System.out.println("DATA: " + data + "\n");
+            System.out.println("Retrieving a block on the block server...");
+            String data = (String) CryptoUtils.deserialize(server.get(c.getClientID()).getValue());
+            System.out.println("Done!\n");
+
+            System.out.println("DATA RECEIVED: " + data + "\n");
+
         } catch (Exception ex) {
             ex.printStackTrace();
         }
