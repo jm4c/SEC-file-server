@@ -190,10 +190,9 @@ public class Client {
             System.out.println(c.getClientID().getValue());
 
             //TODO put_k must be inside fs init to set Client's ID
-            if (!c.getClientID().getValue().equals(server.put_k(new Data_t(serializedData), new Sig_t(CryptoUtils.sign(serializedData, c.getPrivateKey())), c.getPublicKey()).getValue())) {
-                throw new Exception("Client's ID does not match main block ID!");
-            }
-
+            if (!c.getClientID().equals(server.put_k(new Data_t(serializedData/*CryptoUtils.serialize(unsignedData)*/), new Sig_t(CryptoUtils.sign(serializedData, c.getPrivateKey())), c.getPublicKey())))
+            	throw new Exception("Client's ID does not match main block ID!");
+            
             System.out.println("Done!\n");
         } catch (Exception ex) {
             ex.printStackTrace();
