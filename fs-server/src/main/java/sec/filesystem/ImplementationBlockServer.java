@@ -15,9 +15,9 @@ import utils.CryptoUtils;
 
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
-	private static final long serialVersionUID = 1L;
-	
-	// Block table that will contain data blocks.
+    private static final long serialVersionUID = 1L;
+
+    // Block table that will contain data blocks.
     private final HashMap<String, String> blockTable;
 
     public ImplementationBlockServer() throws RemoteException {
@@ -31,14 +31,14 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     private String retrieveBlock(Id_t id) throws UnsupportedEncodingException {
         return blockTable.get(id.getValue());
     }
-    
-    private boolean verifyIntegrity (Block b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException{
-    	return CryptoUtils.verify(b.getData().getValue(), b.getPKey().getValue(), b.getSig().getValue());
+
+    private boolean verifyIntegrity(Block b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
+        return CryptoUtils.verify(b.getData().getValue(), b.getPKey().getValue(), b.getSig().getValue());
     }
 
     private Id_t calculateBlockID(Pk_t publicKey) throws NoSuchAlgorithmException, IOException {
-    	
-    	byte[] hash = HashUtils.hash(publicKey.getValue().toString(), null);
+
+        byte[] hash = HashUtils.hash(publicKey.getValue().toString(), null);
 
         return new Id_t(hash);
     }
@@ -50,63 +50,58 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         try {
             String s = retrieveBlock(id);
             FileInputStream fin = null;
-
             fin = new FileInputStream("./files/" + s + "/" + s + ".dat");
-
             ObjectInputStream ois = new ObjectInputStream(fin);
             b = (Block) ois.readObject();
             ois.close();
-            if(!verifyIntegrity(b))
-            	throw new InvalidSignatureException("Invalid signature.");
-            else
-            	System.out.println("Valid signature");            
+            if (!verifyIntegrity(b)) {
+                throw new InvalidSignatureException("Invalid signature.");
+            } else {
+                System.out.println("Valid signature");
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-       
-        
-        
+
         return b.getData();
     }
 
     @Override
     public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws RemoteException, InvalidSignatureException {
 
-        	try {
-				if(!CryptoUtils.verify(data.getValue(), public_key.getValue(), signature.getValue()))
-					throw new InvalidSignatureException("Invalid signature.");
+        try {
+            if (!CryptoUtils.verify(data.getValue(), public_key.getValue(), signature.getValue())) {
+                throw new InvalidSignatureException("Invalid signature.");
+            }
 
-				System.out.println("signature is valid");
-				
-				Id_t id = calculateBlockID(public_key);
-				System.out.println(id.getValue());
-				Block b = new Block(data, signature, public_key);
-				
+            System.out.println("signature is valid");
 
-				String s = id.getValue();
+            Id_t id = calculateBlockID(public_key);
+            System.out.println(id.getValue());
+            Block b = new Block(data, signature, public_key);
 
-				FileOutputStream fout = null;
-				
-				new File("./files/" + s + "/").mkdirs();
-      
-				fout = new FileOutputStream("./files/" + s + "/" + s + ".dat");
+            String s = id.getValue();
 
-				
-				ObjectOutputStream oos = new ObjectOutputStream(fout);
-				oos.writeObject(b);
-				oos.close();
-				storeBlock(id, s);
-				return id;
-			} catch (InvalidSignatureException ise){
-				ise.printStackTrace();
-				throw ise;
-			} catch (Exception e) {
-				e.printStackTrace();
-				return null;
-			}
-        
+            FileOutputStream fout = null;
+
+            new File("./files/" + s + "/").mkdirs();
+
+            fout = new FileOutputStream("./files/" + s + "/" + s + ".dat");
+
+            ObjectOutputStream oos = new ObjectOutputStream(fout);
+            oos.writeObject(b);
+            oos.close();
+            storeBlock(id, s);
+            return id;
+        } catch (InvalidSignatureException ise) {
+            ise.printStackTrace();
+            throw ise;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+
     }
-
 
     @Override
     public Id_t put_h(Data_t data) throws RemoteException {
