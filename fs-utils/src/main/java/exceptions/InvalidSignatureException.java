@@ -2,12 +2,12 @@ package exceptions;
 
 public class InvalidSignatureException extends Exception {
 
-	private static final long serialVersionUID = 1L;
-	
-	public InvalidSignatureException() {
-	}
+    private static final long serialVersionUID = 1L;
 
-	public InvalidSignatureException(String message) {
-		super(message);
-	}	
+    public InvalidSignatureException() {
+    }
+
+    public InvalidSignatureException(String message) {
+        super(message);
+    }
 }

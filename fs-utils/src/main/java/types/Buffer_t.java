@@ -1,28 +1,30 @@
 package types;
 
-public class Buffer_t extends Type_t{
+import java.util.Arrays;
 
-	private static final long serialVersionUID = 1L;
-	public byte[] value;
+public class Buffer_t extends Type_t {
+
+    private static final long serialVersionUID = 1L;
+    public byte[] value;
 
     public Buffer_t(byte[] id) {
         this.value = id;
     }
-    
+
     @Override
-    public void print(){
-    	System.out.println();
+    public void print() {
+        System.out.println();
         System.out.println("Buffer:");
-    	System.out.println(value.toString());
-		System.out.println();
+        System.out.println(Arrays.toString(value));
+        System.out.println();
     }
-    
+
     @Override
-    public byte[] getValue(){
-    	return value;
+    public byte[] getValue() {
+        return value;
     }
-    
-    public void setValue(byte[] b){
+
+    public void setValue(byte[] b) {
         this.value = b;
     }
 }

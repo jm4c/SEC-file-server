@@ -1,6 +1,8 @@
 package types;
 
-public class Data_t extends Type_t{
+import java.util.Arrays;
+
+public class Data_t extends Type_t {
 
     private static final long serialVersionUID = 1L;
     public byte[] value;
@@ -10,15 +12,15 @@ public class Data_t extends Type_t{
     }
 
     @Override
-    public void print(){
+    public void print() {
         System.out.println();
         System.out.println("Data: ");
-        System.out.println(value.toString());
+        System.out.println(Arrays.toString(value));
         System.out.println();
     }
 
     @Override
-    public byte[] getValue(){
+    public byte[] getValue() {
         return value;
     }
 }

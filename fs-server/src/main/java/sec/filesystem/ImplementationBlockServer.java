@@ -1,5 +1,7 @@
 package sec.filesystem;
 
+import blocks.PublicKeyBlock;
+import interfaces.InterfaceBlockServer;
 import java.io.*;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -17,7 +19,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
     private static final long serialVersionUID = 1L;
 
-    // Block table that will contain data blocks.
+    // PublicKeyBlock table that will contain data blocks.
     private final HashMap<String, String> blockTable;
 
     public ImplementationBlockServer() throws RemoteException {
@@ -32,27 +34,26 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         return blockTable.get(id.getValue());
     }
 
-    private boolean verifyIntegrity(Block b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
+    private boolean verifyIntegrity(PublicKeyBlock b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
         return CryptoUtils.verify(b.getData().getValue(), b.getPKey().getValue(), b.getSig().getValue());
     }
 
     private Id_t calculateBlockID(Pk_t publicKey) throws NoSuchAlgorithmException, IOException {
 
         byte[] hash = HashUtils.hash(publicKey.getValue().toString(), null);
-
         return new Id_t(hash);
     }
 
     @Override
     public Data_t get(Id_t id) throws RemoteException {
-        Block b = null;
+        PublicKeyBlock b = null;
         // Main/Header block
         try {
             String s = retrieveBlock(id);
             FileInputStream fin = null;
             fin = new FileInputStream("./files/" + s + "/" + s + ".dat");
             ObjectInputStream ois = new ObjectInputStream(fin);
-            b = (Block) ois.readObject();
+            b = (PublicKeyBlock) ois.readObject();
             ois.close();
             if (!verifyIntegrity(b)) {
                 throw new InvalidSignatureException("Invalid signature.");
@@ -73,20 +74,15 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             if (!CryptoUtils.verify(data.getValue(), public_key.getValue(), signature.getValue())) {
                 throw new InvalidSignatureException("Invalid signature.");
             }
-
             System.out.println("signature is valid");
 
             Id_t id = calculateBlockID(public_key);
             System.out.println(id.getValue());
-            Block b = new Block(data, signature, public_key);
+            PublicKeyBlock b = new PublicKeyBlock(data, signature, public_key);
 
             String s = id.getValue();
-
-            FileOutputStream fout = null;
-
             new File("./files/" + s + "/").mkdirs();
-
-            fout = new FileOutputStream("./files/" + s + "/" + s + ".dat");
+            FileOutputStream fout = new FileOutputStream("./files/" + s + "/" + s + ".dat");
 
             ObjectOutputStream oos = new ObjectOutputStream(fout);
             oos.writeObject(b);

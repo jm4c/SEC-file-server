@@ -1,5 +1,6 @@
 package sec.filesystem;
 
+import interfaces.InterfaceBlockServer;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
