@@ -8,8 +8,10 @@ import java.rmi.registry.Registry;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static javax.xml.bind.DatatypeConverter.printHexBinary;
 
 import types.*;
 import utils.CryptoUtils;
@@ -69,39 +71,62 @@ public class Client {
         return getClientID();
     }
 
-    private void fs_read(Id_t id, int pos, int size, Buffer_t contents) {
+    private int fs_read(Id_t id, int pos, int size, Buffer_t contents) {
         try {
-            //TODO  Read only "size" bytes, starting at position "pos"
-            //TODO  Return # of bytes read
             //TODO  When files are stored in various blocks, method will need 
-            //      to go retrieve all the blocks, and construct the full file, 
-            //      before reading.        
+            //      to go retrieve all the content blocks, and construct the 
+            //      full file, before reading.        
             Data_t data = server.get(id);
-            contents.setValue(data.getValue());
+            byte[] src = data.getValue();
+            byte[] buff = new byte[size];
+
+            //Adjusting buffer size for out of bound reads.
+            int newLength = pos + size;
+            if (src.length < newLength) {
+                buff = new byte[src.length - pos];
+            }
+
+            System.arraycopy(src, pos, buff, 0, buff.length);
+            contents.setValue(buff);
+            return buff.length;
+
         } catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
         }
     }
 
     private void fs_write(int pos, int size, Buffer_t contents) {
+        //TODO  When files are stored in various blocks, method will need 
+        //      to as the server to only write the content blocks that suffer 
+        //      alterations.  
         try {
-            //TODO  Write "contents" of size "size" at position "pos"
-            //TODO  If filesize smaller than "pos"+"size", increase it.
-            //TODO  If filesize smaller than "pos", pad with zeroes
-            //TODO  As is, this is creating a new file with each write. Maybe 
-            //      put should not be used ???? 
             Id_t id = this.getClientID();
             Data_t data = server.get(this.getClientID());
-            byte[] a = data.getValue();
-            byte[] b = contents.getValue();
-            byte[] c = new byte[a.length + b.length];
-            System.arraycopy(a, 0, c, 0, a.length);
-            System.arraycopy(b, 0, c, a.length, b.length);
-            Sig_t signature = new Sig_t(CryptoUtils.sign(c, getPrivateKey()));
-            if (!id.equals(server.put_k(new Data_t(c), signature, getPublicKey()))) {
+            byte[] src = data.getValue();
+            byte[] buff = contents.getValue();
+            byte[] dest = new byte[src.length];
+
+            //If file size smaller than pos+size, then it must be increased.
+            //If file size smaller than pos, then it must be padded with zeroes.
+            int newLength = pos + size;
+            if (src.length < newLength) {
+                dest = new byte[newLength];
+            }
+
+            System.arraycopy(src, 0, dest, 0, src.length);
+            System.arraycopy(buff, 0, dest, pos, size);
+
+//            System.out.println("\n---------------------------------------------------------");
+//            System.out.println("LENGTH(src,buff,dest):" + src.length + "," + buff.length + "," + dest.length);
+//            System.out.println("src: " + printHexBinary(src));
+//            System.out.println("buff: " + printHexBinary(buff));
+//            System.out.println("dest: " + printHexBinary(dest));
+//            System.out.println("---------------------------------------------------------\n");
+            Sig_t signature = new Sig_t(CryptoUtils.sign(dest, getPrivateKey()));
+            if (!id.equals(server.put_k(new Data_t(dest), signature, getPublicKey()))) {
                 throw new Exception("Client's ID does not match main block ID!");
             }
-            System.out.println("DATA SENT: " + (String) CryptoUtils.deserialize(contents.getValue()) + "\n");
         } catch (Exception ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -111,18 +136,19 @@ public class Client {
         try {
             Client c = new Client();
             c.fs_init();
-
             Buffer_t buffer = new Buffer_t(CryptoUtils.serialize(""));
+
+            //writing to the file
             buffer.setValue(CryptoUtils.serialize("The quick brown fox jumps over the lazy dog"));
-            c.fs_write(0, 0, buffer);
-            buffer.setValue(CryptoUtils.serialize("wadawdawdawdawdawdawdawdwadawdawdawdawdwdawdaw"));
-            c.fs_write(0, 0, buffer);
+            c.fs_write(50, buffer.getValue().length, buffer);
 
-            buffer.setValue(CryptoUtils.serialize("This data is not the same as the old data"));
-            System.out.println("DATA ON BUFFER: " + (String) CryptoUtils.deserialize(buffer.getValue()) + "\n");
+            //reading from the file
+            int bytesRead = c.fs_read(c.getClientID(), 90, 20, buffer);
+//            System.out.println("\n---------------------------------------------------------");
+//            System.out.println("buff: " + printHexBinary(buffer.getValue()));
+//            System.out.println("bytesRead: " + bytesRead);
+//            System.out.println("---------------------------------------------------------\n");
 
-            c.fs_read(c.getClientID(), 0, 0, buffer);
-            System.out.println("DATA RECEIVED: " + (String) CryptoUtils.deserialize(buffer.getValue()) + "\n");
         } catch (Exception ex) {
             ex.printStackTrace();
         }
