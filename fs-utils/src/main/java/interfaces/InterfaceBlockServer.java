@@ -5,6 +5,8 @@ import java.rmi.RemoteException;
 import types.*;
 
 public interface InterfaceBlockServer extends Remote {
+	
+	public static final int BLOCK_MAX_SIZE = 4*1024; //4kB
 
     //Temporary greeting method for testing
     public String greeting() throws RemoteException;

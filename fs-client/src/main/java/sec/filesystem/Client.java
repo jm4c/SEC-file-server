@@ -8,11 +8,10 @@ import java.rmi.registry.Registry;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import static javax.xml.bind.DatatypeConverter.printHexBinary;
-
 import types.*;
 import utils.CryptoUtils;
 
@@ -23,8 +22,10 @@ public class Client {
     private Id_t clientID;
 
     private static InterfaceBlockServer server;
+    private List filesList;
 
     private Client() {
+    	filesList = new ArrayList();
     }
 
     private void setClientID(Id_t headerID) throws NoSuchAlgorithmException, IOException {
@@ -57,15 +58,15 @@ public class Client {
         setPrivateKey(kp);
         setPublicKey(kp);
 
-        String data = "File System Header initialization";
-        Data_t serializedData = new Data_t(CryptoUtils.serialize(data));
+        //current (empty) header file
+        Data_t serializedData = new Data_t(CryptoUtils.serialize(this.filesList));
         Sig_t signature = new Sig_t(CryptoUtils.sign(serializedData.getValue(), getPrivateKey()));
 
         Registry myReg = LocateRegistry.getRegistry("localhost");
         server = (InterfaceBlockServer) myReg.lookup("fs.Server");
         System.out.println(server.greeting() + "\n");
 
-        System.out.println("DATA SENT: " + data + "\n");
+        System.out.println("DATA SENT (empty header): " + this.filesList.toString() + "\n");
         setClientID(server.put_k(serializedData, signature, getPublicKey()));
 
         return getClientID();

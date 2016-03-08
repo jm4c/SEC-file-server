@@ -8,7 +8,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 
 import exceptions.InvalidSignatureException;
 import types.*;
@@ -18,14 +19,17 @@ import utils.CryptoUtils;
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
     private static final long serialVersionUID = 1L;
+    private List<Id_t> headerFiles;
 
     // PublicKeyBlock table that will contain data blocks.
-    private final HashMap<String, String> blockTable;
+//    private final HashMap<String, String> blockTable;
 
     public ImplementationBlockServer() throws RemoteException {
-        blockTable = new HashMap<>();
+    	headerFiles = new ArrayList<>();
+//        blockTable = new HashMap<>();
     }
 
+    /*
     private void storeBlock(Id_t id, String s) throws UnsupportedEncodingException {
         blockTable.put(id.getValue(), s);
     }
@@ -33,25 +37,36 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     private String retrieveBlock(Id_t id) throws UnsupportedEncodingException {
         return blockTable.get(id.getValue());
     }
-
+*/
     private boolean verifyIntegrity(PublicKeyBlock b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
         return CryptoUtils.verify(b.getData().getValue(), b.getPKey().getValue(), b.getSig().getValue());
     }
 
+    
+    //for header block
     private Id_t calculateBlockID(Pk_t publicKey) throws NoSuchAlgorithmException, IOException {
-
         byte[] hash = HashUtils.hash(publicKey.getValue().toString(), null);
         return new Id_t(hash);
     }
+    
+    //for other blocks
+    private Id_t calculateBlockID(Data_t data) throws NoSuchAlgorithmException, IOException {
+    	byte[] hash = HashUtils.hash(data.getValue(), null);
+    	
+        return new Id_t(hash);
+    }
+    
+    
 
     @Override
     public Data_t get(Id_t id) throws RemoteException {
         PublicKeyBlock b = null;
         // Main/Header block
         try {
-            String s = retrieveBlock(id);
+//            String s = retrieveBlock(id);
+        	String s = id.getValue();
             FileInputStream fin = null;
-            fin = new FileInputStream("./files/" + s + "/" + s + ".dat");
+            fin = new FileInputStream("./files/" + s + ".dat");
             ObjectInputStream ois = new ObjectInputStream(fin);
             b = (PublicKeyBlock) ois.readObject();
             ois.close();
@@ -82,12 +97,13 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
             String s = id.getValue();
             new File("./files/" + s + "/").mkdirs();
-            FileOutputStream fout = new FileOutputStream("./files/" + s + "/" + s + ".dat");
+            FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
 
             ObjectOutputStream oos = new ObjectOutputStream(fout);
             oos.writeObject(b);
             oos.close();
-            storeBlock(id, s);
+            headerFiles.add(id);
+//            storeBlock(id, s);
             return id;
         } catch (InvalidSignatureException ise) {
             ise.printStackTrace();
@@ -101,7 +117,25 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
     @Override
     public Id_t put_h(Data_t data) throws RemoteException {
-        throw new UnsupportedOperationException("Not supported yet.");
+    	try {
+			Id_t id = calculateBlockID(data);
+			String s = id.getValue();
+            new File("./files/" + s + "/").mkdirs();
+            FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
+
+            ObjectOutputStream oos = new ObjectOutputStream(fout);
+            oos.writeObject(data);
+            oos.close();
+//            storeBlock(id, s);
+
+        	return id;
+			
+			
+		} catch (NoSuchAlgorithmException | IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+    	
     }
 
     @Override
