@@ -1,0 +1,32 @@
+//Write
+* Writing at a negative start position 
+FS_write(-2,3,buff)
+
+* writing at a start position that surpasses the file size
+FS_write(201,3,buff) filesize=200
+
+* writing content that surpasses the file size
+FS_write(0,201,buff) filesize=200
+
+* Writing a file that doesn't belong to the user (manually alter own client ID)
+setClientID = ABCDEF; FS_write(0,1,buff) 
+
+* Signature check fails
+put_k returns failed signature. 
+
+//Read
+* Reading from a negative start position
+FS_read(file,-2,3,buff)
+
+* Reading from a position that surpasses the file size
+FS_read(file,200,3,buff) filesize=100
+
+* Reading non existent file (missing hash)
+getID() returns missing (file) block
+
+* Reading non existent content block (manually delete a .dat)
+getID() returns missing block
+
+* Reading corrupt file (manually corrupt file contents)
+getID() returns corrupt block
+
