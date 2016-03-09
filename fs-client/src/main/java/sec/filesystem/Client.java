@@ -26,7 +26,7 @@ public class Client {
     private List filesList;
 
     private Client() {
-    	filesList = new ArrayList();
+        filesList = new ArrayList();
     }
 
     private void setClientID(Id_t headerID) throws NoSuchAlgorithmException, IOException {
@@ -52,20 +52,35 @@ public class Client {
     private Pk_t getPublicKey() {
         return publicKey;
     }
-    
-    private byte[][] splitContent(Buffer_t content){
-    	
-    	byte[][] filesArray = new byte[(int)Math.ceil(content.getValue().length / (double)InterfaceBlockServer.BLOCK_MAX_SIZE)][InterfaceBlockServer.BLOCK_MAX_SIZE];
+
+    private byte[][] splitContent(Buffer_t content) {
+
+        byte[][] filesArray = new byte[(int) Math.ceil(content.getValue().length / (double) InterfaceBlockServer.BLOCK_MAX_SIZE)][InterfaceBlockServer.BLOCK_MAX_SIZE];
 
         int ptr = 0;
 
-        for(int i = 0; i < filesArray.length; i++) {
+        for (int i = 0; i < filesArray.length; i++) {
             filesArray[i] = Arrays.copyOfRange(content.getValue(), ptr, ptr + InterfaceBlockServer.BLOCK_MAX_SIZE);
-            ptr += InterfaceBlockServer.BLOCK_MAX_SIZE ;
+            ptr += InterfaceBlockServer.BLOCK_MAX_SIZE;
         }
 
         return filesArray;
-    
+
+    }
+
+    private Buffer_t joinContent(byte[][] filesArray) {
+
+        byte[] b = new byte[filesArray.length * InterfaceBlockServer.BLOCK_MAX_SIZE];
+        int ptr = 0;
+
+        for (int i = 0; i < filesArray.length; i++) {
+            System.arraycopy(filesArray[i], 0, b, ptr, InterfaceBlockServer.BLOCK_MAX_SIZE);
+            ptr += InterfaceBlockServer.BLOCK_MAX_SIZE;
+        }
+        Buffer_t content = new Buffer_t(b);
+
+        return content;
+
     }
 
     protected Id_t fs_init() throws Exception {
@@ -118,8 +133,7 @@ public class Client {
         //      to as the server to only write the content blocks that suffer 
         //      alterations.  
         try {
-        	
-        	
+
             Id_t id = this.getClientID();
             Data_t data = server.get(this.getClientID());
             byte[] src = data.getValue();
