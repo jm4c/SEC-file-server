@@ -9,6 +9,7 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -51,6 +52,21 @@ public class Client {
     private Pk_t getPublicKey() {
         return publicKey;
     }
+    
+    private byte[][] splitContent(Buffer_t content){
+    	
+    	byte[][] filesArray = new byte[(int)Math.ceil(content.getValue().length / (double)InterfaceBlockServer.BLOCK_MAX_SIZE)][InterfaceBlockServer.BLOCK_MAX_SIZE];
+
+        int ptr = 0;
+
+        for(int i = 0; i < filesArray.length; i++) {
+            filesArray[i] = Arrays.copyOfRange(content.getValue(), ptr, ptr + InterfaceBlockServer.BLOCK_MAX_SIZE);
+            ptr += InterfaceBlockServer.BLOCK_MAX_SIZE ;
+        }
+
+        return filesArray;
+    
+    }
 
     protected Id_t fs_init() throws Exception {
         KeyPair kp = CryptoUtils.setKeyPair();
@@ -72,7 +88,7 @@ public class Client {
         return getClientID();
     }
 
-    private int fs_read(Id_t id, int pos, int size, Buffer_t contents) {
+    protected int fs_read(Id_t id, int pos, int size, Buffer_t contents) {
         try {
             //TODO  When files are stored in various blocks, method will need 
             //      to go retrieve all the content blocks, and construct the 
@@ -97,11 +113,13 @@ public class Client {
         }
     }
 
-    private void fs_write(int pos, int size, Buffer_t contents) {
+    protected void fs_write(int pos, int size, Buffer_t contents) {
         //TODO  When files are stored in various blocks, method will need 
         //      to as the server to only write the content blocks that suffer 
         //      alterations.  
         try {
+        	
+        	
             Id_t id = this.getClientID();
             Data_t data = server.get(this.getClientID());
             byte[] src = data.getValue();
