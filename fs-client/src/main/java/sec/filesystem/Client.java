@@ -139,9 +139,13 @@ public class Client {
         	if (contents == null)
         		throw new Exception("Content is null");
         	
+        	
+        	System.out.println(this.getClientID().getValue());
         	//Client's ID can only be a header file
         	Data_t data = server.get(this.getClientID());
         	
+        	if(data==null)
+        		System.out.println("data is null");
         	//Header file's data is always a list of other files' IDs
         	@SuppressWarnings("unchecked")
 			List<Id_t> originalFileList = (List<Id_t>) CryptoUtils.deserialize(data.getValue());
@@ -169,7 +173,7 @@ public class Client {
 			System.arraycopy(contents.getValue(), 0, base.value, pos, size);        	
         	
         	
-        	byte[][] filesArray = splitContent(contents);
+        	byte[][] filesArray = splitContent(base);
         	
         	List<Id_t> newFileList = new ArrayList<Id_t>();
         	for (int i = 0; i < filesArray.length; i++) {
@@ -238,8 +242,8 @@ public class Client {
 //            buffer.setValue(CryptoUtils.serialize(new byte[9999]));
             buffer.setValue(CryptoUtils.serialize("The quick brown fox jumps over the lazy dog"));
             c.fs_write(50, buffer.getValue().length, buffer);
-            buffer.setValue(CryptoUtils.serialize("The quick brown fox jumps over the lazy do"));
-            c.fs_write(50, buffer.getValue().length, buffer);
+//            buffer.setValue(CryptoUtils.serialize("The quick brown fox jumps over the lazy do"));
+            c.fs_write(1000, buffer.getValue().length, buffer);
 
             //reading from the file
             int bytesRead = c.fs_read(c.getClientID(), 90, 20, buffer);

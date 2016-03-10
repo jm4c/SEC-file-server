@@ -53,23 +53,33 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         PublicKeyBlock b = null;
         // Main/Header block
         try {
-//            String s = retrieveBlock(id);
         	String s = id.getValue();
             FileInputStream fin = null;
             fin = new FileInputStream("./files/" + s + ".dat");
             ObjectInputStream ois = new ObjectInputStream(fin);
-            b = (PublicKeyBlock) ois.readObject();
-            ois.close();
-            if (!verifyIntegrity(b)) {
-                throw new InvalidSignatureException("Invalid signature.");
-            } else {
-                System.out.println("Valid signature");
+            Object obj = ois.readObject();
+            if(obj instanceof PublicKeyBlock){
+            	System.out.println("\nGot header from:./files/" + s + ".dat");
+            	b = (PublicKeyBlock) obj;
+            	ois.close();
+                if (!verifyIntegrity(b)) {
+                    throw new InvalidSignatureException("Invalid signature.");
+                } else {
+                    System.out.println("Valid signature");
+                }
+                return b.getData();
+            }else{
+            	System.out.println("Got content from:./files/" + s + ".dat");
+            	Data_t data = (Data_t) obj;
+            	ois.close();
+            	return data;
             }
+            
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        return b.getData();
+        return null;
     }
 
     @Override
@@ -88,6 +98,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             String s = id.getValue();
             new File("./files/").mkdirs();
             FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
+            System.out.println("Stored header in:./files/" + s + ".dat");
 
             ObjectOutputStream oos = new ObjectOutputStream(fout);
             oos.writeObject(b);
@@ -111,7 +122,8 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 			Id_t id = calculateBlockID(data);
 			String s = id.getValue();
             new File("./files/").mkdirs();
-            FileOutputStream fout = new FileOutputStream("./files/" + s + ".sec");
+            FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
+            System.out.println("Stored content in:./files/" + s + ".dat");
 
             ObjectOutputStream oos = new ObjectOutputStream(fout);
             oos.writeObject(data);
