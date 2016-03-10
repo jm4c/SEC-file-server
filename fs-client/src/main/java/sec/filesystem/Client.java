@@ -129,15 +129,47 @@ public class Client {
         }
     }
 
-    protected void fs_write(int pos, int size, Buffer_t content) {
+    protected void fs_write(int pos, int size, Buffer_t contents) {
         //TODO  When files are stored in various blocks, method will need 
         //      to as the server to only write the content blocks that suffer 
         //      alterations. 
     	System.out.println("\nNew FS write");
+    	//TODO	fs_write must write "size" bytes in position "pos" of the file
         try {
-        	if (content == null)
+        	if (contents == null)
         		throw new Exception("Content is null");
-        	byte[][] filesArray = splitContent(content);
+        	
+        	//Client's ID can only be a header file
+        	Data_t data = server.get(this.getClientID());
+        	
+        	//Header file's data is always a list of other files' IDs
+        	@SuppressWarnings("unchecked")
+			List<Id_t> originalFileList = (List<Id_t>) CryptoUtils.deserialize(data.getValue());
+			
+			Buffer_t base = null;
+			
+			if (originalFileList.isEmpty()){
+				base = new Buffer_t(new byte[pos+size]);
+			}else{
+				byte[][] originalContentParts = new byte[originalFileList.size()][InterfaceBlockServer.BLOCK_MAX_SIZE];
+				for(int i = 0; i < originalFileList.size(); i++){
+					originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
+				}
+				base = joinContent(originalContentParts);
+				
+				
+				//	puts old content into a bigger file
+				if(base.getValue().length < pos + size)
+				{
+					Buffer_t auxBase = new Buffer_t(new byte[pos+size]);
+					System.arraycopy(base.getValue(), 0, auxBase.value, 0, size);
+					base = auxBase;
+				}
+			}
+			System.arraycopy(contents.getValue(), 0, base.value, pos, size);        	
+        	
+        	
+        	byte[][] filesArray = splitContent(contents);
         	
         	List<Id_t> newFileList = new ArrayList<Id_t>();
         	for (int i = 0; i < filesArray.length; i++) {
@@ -150,11 +182,7 @@ public class Client {
         	
         	
         	
-        	//Client ID can only be a header file
-        	Data_t data = server.get(this.getClientID());
         	
-        	@SuppressWarnings("unchecked")
-			List<Id_t> originalFileList = (List<Id_t>) CryptoUtils.deserialize(data.getValue());
 			
 			
 			//uploads header first to check signature
@@ -163,7 +191,7 @@ public class Client {
             }
         	
         	
-        	
+        	//uploads contents
         	if (originalFileList.isEmpty()){
         		System.out.println("Original it's empty");
         		for (int i = 0; i < newFileList.size() ; i++)
