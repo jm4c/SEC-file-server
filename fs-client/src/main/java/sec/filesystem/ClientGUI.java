@@ -1,10 +1,8 @@
-package src.main.java.sec.filesystem;
+package sec.filesystem;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
-import src.main.java.sec.filesystem.Client;
+import sec.filesystem.Client;
 import types.*;
 import utils.*;
 /*
@@ -18,7 +16,8 @@ import utils.*;
  */
 public class ClientGUI extends javax.swing.JFrame {
 
-    private Client client;
+	private static final long serialVersionUID = 1L;
+	private Client client;
     
     public ClientGUI() {
         initComponents();

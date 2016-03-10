@@ -21,23 +21,13 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     private static final long serialVersionUID = 1L;
     private List<Id_t> headerFiles;
 
-    // PublicKeyBlock table that will contain data blocks.
-//    private final HashMap<String, String> blockTable;
 
     public ImplementationBlockServer() throws RemoteException {
     	headerFiles = new ArrayList<>();
-//        blockTable = new HashMap<>();
+
     }
 
-    /*
-    private void storeBlock(Id_t id, String s) throws UnsupportedEncodingException {
-        blockTable.put(id.getValue(), s);
-    }
 
-    private String retrieveBlock(Id_t id) throws UnsupportedEncodingException {
-        return blockTable.get(id.getValue());
-    }
-*/
     private boolean verifyIntegrity(PublicKeyBlock b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
         return CryptoUtils.verify(b.getData().getValue(), b.getPKey().getValue(), b.getSig().getValue());
     }
@@ -96,7 +86,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             PublicKeyBlock b = new PublicKeyBlock(data, signature, public_key);
 
             String s = id.getValue();
-            new File("./files/" + s + "/").mkdirs();
+            new File("./files/").mkdirs();
             FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
 
             ObjectOutputStream oos = new ObjectOutputStream(fout);
@@ -120,8 +110,8 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     	try {
 			Id_t id = calculateBlockID(data);
 			String s = id.getValue();
-            new File("./files/" + s + "/").mkdirs();
-            FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
+            new File("./files/").mkdirs();
+            FileOutputStream fout = new FileOutputStream("./files/" + s + ".sec");
 
             ObjectOutputStream oos = new ObjectOutputStream(fout);
             oos.writeObject(data);

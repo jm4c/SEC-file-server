@@ -15,6 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import types.*;
 import utils.CryptoUtils;
+import utils.HashUtils;
 
 public class Client {
 
@@ -23,10 +24,9 @@ public class Client {
     private Id_t clientID;
 
     private static InterfaceBlockServer server;
-    private List filesList;
 
-    private Client() {
-        filesList = new ArrayList();
+    protected Client() {
+   
     }
 
     private void setClientID(Id_t headerID) throws NoSuchAlgorithmException, IOException {
@@ -41,7 +41,7 @@ public class Client {
         this.publicKey = new Pk_t(kp.getPublic());
     }
 
-    private Id_t getClientID() {
+    protected Id_t getClientID() {
         return clientID;
     }
 
@@ -90,15 +90,16 @@ public class Client {
         setPublicKey(kp);
 
         //current (empty) header file
-        Data_t serializedData = new Data_t(CryptoUtils.serialize(this.filesList));
-        Sig_t signature = new Sig_t(CryptoUtils.sign(serializedData.getValue(), getPrivateKey()));
+        List<Id_t> header = new ArrayList<Id_t>();
+        Data_t headerData = new Data_t(CryptoUtils.serialize(header));
+        Sig_t signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
 
         Registry myReg = LocateRegistry.getRegistry("localhost");
         server = (InterfaceBlockServer) myReg.lookup("fs.Server");
         System.out.println(server.greeting() + "\n");
 
-        System.out.println("DATA SENT (empty header): " + this.filesList.toString() + "\n");
-        setClientID(server.put_k(serializedData, signature, getPublicKey()));
+        System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
+        setClientID(server.put_k(headerData, signature, getPublicKey()));
 
         return getClientID();
     }
@@ -128,38 +129,72 @@ public class Client {
         }
     }
 
-    protected void fs_write(int pos, int size, Buffer_t contents) {
+    protected void fs_write(int pos, int size, Buffer_t content) {
         //TODO  When files are stored in various blocks, method will need 
         //      to as the server to only write the content blocks that suffer 
-        //      alterations.  
+        //      alterations. 
+    	System.out.println("\nNew FS write");
         try {
-
-            Id_t id = this.getClientID();
-            Data_t data = server.get(this.getClientID());
-            byte[] src = data.getValue();
-            byte[] buff = contents.getValue();
-            byte[] dest = new byte[src.length];
-
-            //If file size smaller than pos+size, then it must be increased.
-            //If file size smaller than pos, then it must be padded with zeroes.
-            int newLength = pos + size;
-            if (src.length < newLength) {
-                dest = new byte[newLength];
-            }
-
-            System.arraycopy(src, 0, dest, 0, src.length);
-            System.arraycopy(buff, 0, dest, pos, size);
-
-//            System.out.println("\n---------------------------------------------------------");
-//            System.out.println("LENGTH(src,buff,dest):" + src.length + "," + buff.length + "," + dest.length);
-//            System.out.println("src: " + printHexBinary(src));
-//            System.out.println("buff: " + printHexBinary(buff));
-//            System.out.println("dest: " + printHexBinary(dest));
-//            System.out.println("---------------------------------------------------------\n");
-            Sig_t signature = new Sig_t(CryptoUtils.sign(dest, getPrivateKey()));
-            if (!id.equals(server.put_k(new Data_t(dest), signature, getPublicKey()))) {
+        	if (content == null)
+        		throw new Exception("Content is null");
+        	byte[][] filesArray = splitContent(content);
+        	
+        	List<Id_t> newFileList = new ArrayList<Id_t>();
+        	for (int i = 0; i < filesArray.length; i++) {
+        		newFileList.add(new Id_t (HashUtils.hash(filesArray[i], null)));
+        	}
+        	
+        	Data_t headerData = new Data_t(CryptoUtils.serialize(newFileList));
+        	Sig_t signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
+        	
+        	
+        	
+        	
+        	//Client ID can only be a header file
+        	Data_t data = server.get(this.getClientID());
+        	
+        	@SuppressWarnings("unchecked")
+			List<Id_t> originalFileList = (List<Id_t>) CryptoUtils.deserialize(data.getValue());
+			
+			
+			//uploads header first to check signature
+			if (!getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
                 throw new Exception("Client's ID does not match main block ID!");
             }
+        	
+        	
+        	
+        	if (originalFileList.isEmpty()){
+        		System.out.println("Original it's empty");
+        		for (int i = 0; i < newFileList.size() ; i++)
+        		{
+        			System.out.println("new block! (" + i + ")");
+        			System.out.println(server.put_h(new Data_t(filesArray[i])).getValue());
+        		}
+        	}else{
+        		boolean addBlockFlag = true;
+	        	for (int i = 0; i < newFileList.size() ; i++) {
+	        		addBlockFlag = true;
+	        		System.out.println("\nNEW[" + i + "]:" + newFileList.get(i).getValue());
+	        		
+	        		for(int j = 0; j < originalFileList.size(); j++){
+	        			System.out.println("OLD[" + j + "]:" + originalFileList.get(j).getValue());
+	        			if (originalFileList.get(j).equals(newFileList.get(i))){
+	        				addBlockFlag = false;
+	        				break;
+	        			}				
+	        		}
+	        		
+	        		if (addBlockFlag){
+	        			System.out.println("new block!");
+	            		server.put_h(new Data_t(filesArray[i]));
+	        		}
+	        		
+	        		
+	        	}
+        	}
+        	
+        	
         } catch (Exception ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -172,7 +207,10 @@ public class Client {
             Buffer_t buffer = new Buffer_t(CryptoUtils.serialize(""));
 
             //writing to the file
+//            buffer.setValue(CryptoUtils.serialize(new byte[9999]));
             buffer.setValue(CryptoUtils.serialize("The quick brown fox jumps over the lazy dog"));
+            c.fs_write(50, buffer.getValue().length, buffer);
+            buffer.setValue(CryptoUtils.serialize("The quick brown fox jumps over the lazy do"));
             c.fs_write(50, buffer.getValue().length, buffer);
 
             //reading from the file
