@@ -1,9 +1,7 @@
 //Write
 * Writing a file that doesn't belong to the user (manually alter own client ID)
 setClientID = ABCDEF; FS_write(0,1,buff) 
-
-* Signature check fails
-put_k returns failed signature. 
+# DONE CLIENT ID MISMATCH 
 
 //Read
 * Reading non existent file (missing hash)
