@@ -29,7 +29,7 @@ public class Client {
    
     }
 
-    private void setClientID(Id_t headerID) throws NoSuchAlgorithmException, IOException {
+    protected void setClientID(Id_t headerID) throws NoSuchAlgorithmException, IOException {
         this.clientID = headerID;
     }
 
