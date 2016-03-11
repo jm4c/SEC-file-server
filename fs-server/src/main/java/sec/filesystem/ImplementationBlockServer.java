@@ -1,6 +1,7 @@
 package sec.filesystem;
 
 import blocks.PublicKeyBlock;
+import exceptions.IDMismatchException;
 import interfaces.InterfaceBlockServer;
 import java.io.*;
 import java.rmi.RemoteException;
@@ -21,60 +22,59 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     private static final long serialVersionUID = 1L;
     private List<Id_t> headerFiles;
 
-
     public ImplementationBlockServer() throws RemoteException {
-    	headerFiles = new ArrayList<>();
+        headerFiles = new ArrayList<>();
 
     }
-
 
     private boolean verifyIntegrity(PublicKeyBlock b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
         return CryptoUtils.verify(b.getData().getValue(), b.getPKey().getValue(), b.getSig().getValue());
     }
 
-    
     //for header block
     private Id_t calculateBlockID(Pk_t publicKey) throws NoSuchAlgorithmException, IOException {
         byte[] hash = HashUtils.hash(publicKey.getValue().toString(), null);
         return new Id_t(hash);
     }
-    
+
     //for other blocks
     private Id_t calculateBlockID(Data_t data) throws NoSuchAlgorithmException, IOException {
-    	byte[] hash = HashUtils.hash(data.getValue(), null);
-    	
+        byte[] hash = HashUtils.hash(data.getValue(), null);
+
         return new Id_t(hash);
     }
-    
-    
 
     @Override
     public Data_t get(Id_t id) throws RemoteException {
         PublicKeyBlock b = null;
         // Main/Header block
         try {
-        	String s = id.getValue();
+            String s = id.getValue();
             FileInputStream fin = null;
             fin = new FileInputStream("./files/" + s + ".dat");
             ObjectInputStream ois = new ObjectInputStream(fin);
             Object obj = ois.readObject();
-            if(obj instanceof PublicKeyBlock){
-            	System.out.println("\nGot header from:./files/" + s + ".dat");
-            	b = (PublicKeyBlock) obj;
-            	ois.close();
+            if (obj instanceof PublicKeyBlock) {
+                System.out.println("\nGot header from:./files/" + s + ".dat");
+                b = (PublicKeyBlock) obj;
+                ois.close();
                 if (!verifyIntegrity(b)) {
                     throw new InvalidSignatureException("Invalid signature.");
                 } else {
                     System.out.println("Valid signature");
                 }
                 return b.getData();
-            }else{
-            	System.out.println("Got content from:./files/" + s + ".dat");
-            	Data_t data = (Data_t) obj;
-            	ois.close();
-            	return data;
+            } else {
+                System.out.println("Got content from:./files/" + s + ".dat");
+                Data_t data = (Data_t) obj;
+                ois.close();
+                String blockID = calculateBlockID(data).getValue();
+                if (s.compareTo(blockID) != 0) {
+                    throw new IDMismatchException("Content IDs are not the same.");
+                }
+                return data;
             }
-            
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -118,9 +118,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
     @Override
     public Id_t put_h(Data_t data) throws RemoteException {
-    	try {
-			Id_t id = calculateBlockID(data);
-			String s = id.getValue();
+        try {
+            Id_t id = calculateBlockID(data);
+            String s = id.getValue();
             new File("./files/").mkdirs();
             FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
             System.out.println("Stored content in:./files/" + s + ".dat");
@@ -130,14 +130,13 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             oos.close();
 //            storeBlock(id, s);
 
-        	return id;
-			
-			
-		} catch (NoSuchAlgorithmException | IOException e) {
-			e.printStackTrace();
-			return null;
-		}
-    	
+            return id;
+
+        } catch (NoSuchAlgorithmException | IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
     }
 
     @Override

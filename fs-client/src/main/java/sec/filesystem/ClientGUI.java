@@ -2,7 +2,7 @@ package sec.filesystem;
 
 import java.io.IOException;
 import javax.swing.SwingUtilities;
-import sec.filesystem.Client;
+import sec.filesystem.Library;
 import types.*;
 import utils.*;
 /*
@@ -17,11 +17,11 @@ import utils.*;
 public class ClientGUI extends javax.swing.JFrame {
 
 	private static final long serialVersionUID = 1L;
-	private Client client;
+	private Library client;
     
     public ClientGUI() {
         initComponents();
-        client = new Client();
+        client = new Library();
     }
 
     @SuppressWarnings("unchecked")
@@ -197,7 +197,7 @@ public class ClientGUI extends javax.swing.JFrame {
             client.fs_init();
             this.updateTextArea(client.getClientID().toString());
         } catch (Exception ex) {
-            this.updateTextArea("Fodeu");
+            this.updateTextArea("Error");
         }
     }//GEN-LAST:event_jToggleButton1ActionPerformed
 
