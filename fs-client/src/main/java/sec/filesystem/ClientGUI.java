@@ -1,9 +1,11 @@
 package sec.filesystem;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import sec.filesystem.Library;
-import types.*;
+import types.Buffer_t;
 import utils.*;
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -18,10 +20,16 @@ public class ClientGUI extends javax.swing.JFrame {
 
 	private static final long serialVersionUID = 1L;
 	private Library client;
+        private Buffer_t buffer;
     
     public ClientGUI() {
         initComponents();
         client = new Library();
+            try {
+                buffer = new Buffer_t(CryptoUtils.serialize(""));
+            } catch (IOException ex) {
+                Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
     }
 
     @SuppressWarnings("unchecked")
@@ -138,33 +146,34 @@ public class ClientGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jToggleButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton3ActionPerformed
-        updateTextArea("Writing...");
-        
-        String textpos = jTextField1.getText();
-        String textsize = jTextField2.getText();
-        String textcontent = jTextField3.getText();
-        String result = "";
-        Buffer_t buff;
-        
-        if(textpos.equals("")){
-            this.updateTextArea("int pos is incorrect");
-        }
-        if(textsize.equals("")){
-            this.updateTextArea("int size is incorrect");
-        }
-        if(textcontent.equals("")){
-            this.updateTextArea("content is empty , so basically you dont write anything -.-");
-        }
-        
-        int pos = Integer.parseInt(textpos);
-        int size = Integer.parseInt(textsize);
-        
-        //Rever criação do buffer
-        
-        buff = new Buffer_t(textcontent.getBytes());
-        
-        client.fs_write(pos, size, buff);
-        this.updateTextArea("Writing Complete with : " + textcontent);
+            try {
+                updateTextArea("Writing...");
+                
+                String textpos = jTextField1.getText();
+                String textsize = jTextField2.getText();
+                String textcontent = jTextField3.getText();
+                String result = "";
+                
+                if(textpos.equals("")){
+                    this.updateTextArea("int pos is incorrect");
+                }
+                if(textsize.equals("")){
+                    this.updateTextArea("int size is incorrect");
+                }
+                if(textcontent.equals("")){
+                    this.updateTextArea("content is empty , so basically you dont write anything -.-");
+                }
+                
+                int pos = Integer.parseInt(textpos);
+                int size = Integer.parseInt(textsize);
+                
+                //Rever criação do buffer
+                buffer.setValue(CryptoUtils.serialize(textcontent));
+                client.fs_write(pos, buffer.getValue().length, buffer);
+                this.updateTextArea("Writing Complete with : " + textcontent);
+            } catch (IOException ex) {
+                Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
     }//GEN-LAST:event_jToggleButton3ActionPerformed
 
     private void jToggleButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton2ActionPerformed
@@ -185,8 +194,8 @@ public class ClientGUI extends javax.swing.JFrame {
         int size = Integer.parseInt(textsize);
         
         try {
-            result = client.fs_read(client.getClientID(), pos, size, new Buffer_t(CryptoUtils.serialize("")));
-            this.updateTextArea(result+"");
+            int bytesRead = client.fs_read(client.getClientID(), pos, buffer.getValue().length, buffer);
+            this.updateTextArea(bytesRead+"");
         } catch (IOException ex) {
             updateTextArea("Something wrong with reading");
         }
