@@ -17,6 +17,8 @@ import types.*;
 import utils.CryptoUtils;
 import utils.HashUtils;
 
+import static javax.xml.bind.DatatypeConverter.printHexBinary;
+
 public class Client {
 
     private PrivateKey privateKey;
@@ -109,23 +111,37 @@ public class Client {
             //TODO  When files are stored in various blocks, method will need 
             //      to go retrieve all the content blocks, and construct the 
             //      full file, before reading.        
-            Data_t data = server.get(id);
-            byte[] src = data.getValue();
-            byte[] buff = new byte[size];
+            
+        	
+        	Data_t data = server.get(id);
+        	
+        	@SuppressWarnings("unchecked")
+			List<Id_t> originalFileList = (List<Id_t>) CryptoUtils.deserialize(data.getValue());
+			
+        	byte[][] originalContentParts = new byte[originalFileList.size()][InterfaceBlockServer.BLOCK_MAX_SIZE];
+			for(int i = 0; i < originalFileList.size(); i++){
+				originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
+			}
+			
+			//all stored data
+			Buffer_t src = joinContent(originalContentParts);
+			
+			byte[] buff;
+			if(src.getValue().length < pos+size)
+				buff = new byte[src.getValue().length-pos];
+			else
+				buff = new byte[size];
 
-            //Adjusting buffer size for out of bound reads.
-            int newLength = pos + size;
-            if (src.length < newLength) {
-                buff = new byte[src.length - pos];
-            }
-
-            System.arraycopy(src, pos, buff, 0, buff.length);
-            contents.setValue(buff);
-            return buff.length;
+			System.arraycopy(src.getValue(), pos, buff, 0, buff.length);
+			contents.setValue(buff);
+			return buff.length;
 
         } catch (RemoteException ex) {
             Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
             return -1;
+        } catch (Exception e) {
+			e.printStackTrace();
+			return -1;
         }
     }
 
@@ -241,16 +257,20 @@ public class Client {
             //writing to the file
 //            buffer.setValue(CryptoUtils.serialize(new byte[9999]));
             buffer.setValue(CryptoUtils.serialize("The quick brown fox jumps over the lazy dog"));
-            c.fs_write(50, buffer.getValue().length, buffer);
+            c.fs_write(0, buffer.getValue().length, buffer);
+            System.out.println(buffer.getValue().length);
 //            buffer.setValue(CryptoUtils.serialize("The quick brown fox jumps over the lazy do"));
-            c.fs_write(1000, buffer.getValue().length, buffer);
-
+//            c.fs_write(1000, buffer.getValue().length, buffer);
+            System.out.println("buff: " + printHexBinary(buffer.getValue()));
             //reading from the file
-            int bytesRead = c.fs_read(c.getClientID(), 90, 20, buffer);
-//            System.out.println("\n---------------------------------------------------------");
-//            System.out.println("buff: " + printHexBinary(buffer.getValue()));
-//            System.out.println("bytesRead: " + bytesRead);
-//            System.out.println("---------------------------------------------------------\n");
+//            int bytesRead = c.fs_read(c.getClientID(), 90, 20, buffer);
+            int bytesRead = c.fs_read(c.getClientID(), 30, 40, buffer);
+            
+            
+            System.out.println("\n---------------------------------------------------------");
+            System.out.println("buff: " + printHexBinary(buffer.getValue()));
+            System.out.println("bytesRead: " + bytesRead);
+            System.out.println("---------------------------------------------------------\n");
 
         } catch (Exception ex) {
             ex.printStackTrace();
