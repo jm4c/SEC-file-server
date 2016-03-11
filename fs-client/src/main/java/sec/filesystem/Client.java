@@ -57,14 +57,16 @@ public class Client {
 
     private byte[][] splitContent(Buffer_t content) {
 
-        byte[][] filesArray = new byte[(int) Math.ceil(content.getValue().length / (double) InterfaceBlockServer.BLOCK_MAX_SIZE)][InterfaceBlockServer.BLOCK_MAX_SIZE];
+        byte[][] filesArray = new byte[(int) Math.ceil(content.getValue().length / (double) InterfaceBlockServer.BLOCK_MAX_SIZE)][];
 
         int ptr = 0;
 
-        for (int i = 0; i < filesArray.length; i++) {
+        for (int i = 0; i < filesArray.length-1; i++) {
             filesArray[i] = Arrays.copyOfRange(content.getValue(), ptr, ptr + InterfaceBlockServer.BLOCK_MAX_SIZE);
             ptr += InterfaceBlockServer.BLOCK_MAX_SIZE;
         }
+        filesArray[filesArray.length-1] = Arrays.copyOfRange(content.getValue(), ptr, content.getValue().length);
+        
 
         return filesArray;
 
@@ -72,13 +74,16 @@ public class Client {
 
     private Buffer_t joinContent(byte[][] filesArray) {
 
-        byte[] b = new byte[filesArray.length * InterfaceBlockServer.BLOCK_MAX_SIZE];
+        byte[] b = new byte[(filesArray.length - 1) * InterfaceBlockServer.BLOCK_MAX_SIZE + filesArray[filesArray.length - 1].length];
         int ptr = 0;
 
         for (int i = 0; i < filesArray.length; i++) {
-            System.arraycopy(filesArray[i], 0, b, ptr, InterfaceBlockServer.BLOCK_MAX_SIZE);
-            ptr += InterfaceBlockServer.BLOCK_MAX_SIZE;
+            System.arraycopy(filesArray[i], 0, b, ptr, filesArray[i].length);
+            ptr += filesArray[i].length;
         }
+        
+        
+        
         Buffer_t content = new Buffer_t(b);
 
         return content;
@@ -118,7 +123,7 @@ public class Client {
         	@SuppressWarnings("unchecked")
 			List<Id_t> originalFileList = (List<Id_t>) CryptoUtils.deserialize(data.getValue());
 			
-        	byte[][] originalContentParts = new byte[originalFileList.size()][InterfaceBlockServer.BLOCK_MAX_SIZE];
+        	byte[][] originalContentParts = new byte[originalFileList.size()][];
 			for(int i = 0; i < originalFileList.size(); i++){
 				originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
 			}
@@ -171,7 +176,7 @@ public class Client {
 			if (originalFileList.isEmpty()){
 				base = new Buffer_t(new byte[pos+size]);
 			}else{
-				byte[][] originalContentParts = new byte[originalFileList.size()][InterfaceBlockServer.BLOCK_MAX_SIZE];
+				byte[][] originalContentParts = new byte[originalFileList.size()][];
 				for(int i = 0; i < originalFileList.size(); i++){
 					originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
 				}
