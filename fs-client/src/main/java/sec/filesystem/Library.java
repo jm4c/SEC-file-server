@@ -25,7 +25,7 @@ public class Library {
     private Id_t clientID;
 
     private static InterfaceBlockServer server;
-    
+
     private List fileList;
 
     protected Library() {
@@ -55,15 +55,14 @@ public class Library {
     private Pk_t getPublicKey() {
         return publicKey;
     }
-    
-    private void setFileList(List l){
+
+    private void setFileList(List l) {
         fileList = l;
     }
-    
-    protected List getFileList(){
+
+    protected List getFileList() {
         return fileList;
     }
-    
 
     private byte[][] splitContent(Buffer_t content) {
 
@@ -95,6 +94,16 @@ public class Library {
 
         return content;
 
+    }
+
+    protected List fs_list(){
+        try {
+            return server.getPKeyList();
+        } catch (Exception ex) {
+            final String message = "Unable to retrieve Public Key list.";
+            Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);
+            return null;
+        }
     }
 
     protected Id_t fs_init() throws Exception {
@@ -234,7 +243,7 @@ public class Library {
                 }
             }
             this.setFileList(newFileList);
-            
+
         } catch (Exception ex) {
             final String message = "Unable to furfill write request.";
             Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);

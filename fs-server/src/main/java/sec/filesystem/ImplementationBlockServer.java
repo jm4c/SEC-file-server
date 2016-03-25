@@ -20,7 +20,7 @@ import utils.CryptoUtils;
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
     private static final long serialVersionUID = 1L;
-    private List<Id_t> headerFiles;
+    private final List<Id_t> headerFiles;
 
     public ImplementationBlockServer() throws RemoteException {
         headerFiles = new ArrayList<>();
@@ -45,6 +45,10 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     @Override
+    public List getPKeyList() throws RemoteException {
+        return headerFiles;
+    }
+        
     public Data_t get(Id_t id) throws RemoteException {
         PublicKeyBlock b = null;
         // Main/Header block
@@ -103,8 +107,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             ObjectOutputStream oos = new ObjectOutputStream(fout);
             oos.writeObject(b);
             oos.close();
-            headerFiles.add(id);
-//            storeBlock(id, s);
+            if (!headerFiles.contains(id)) {
+                headerFiles.add(id);
+            }
             return id;
         } catch (InvalidSignatureException ise) {
             ise.printStackTrace();
@@ -113,7 +118,6 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             e.printStackTrace();
             return null;
         }
-
     }
 
     @Override

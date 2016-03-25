@@ -1,5 +1,6 @@
 package types;
 
+import java.util.Objects;
 import static javax.xml.bind.DatatypeConverter.printHexBinary;
 
 public class Id_t extends Type_t {
@@ -23,7 +24,28 @@ public class Id_t extends Type_t {
         return value;
     }
 
-    public boolean equals(Id_t id) {
-        return this.getValue().equals(id.getValue());
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Id_t other = (Id_t) obj;
+        if (!Objects.equals(this.value, other.value)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 79 * hash + Objects.hashCode(this.value);
+        return hash;
     }
 }
