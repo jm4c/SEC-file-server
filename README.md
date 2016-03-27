@@ -1,6 +1,7 @@
 # SEC-file-server
 
 ## [Project 1](https://github.com/jm4c/SEC-file-server/wiki/Project-1:-File-server-with-integrity-guarantees)
+## [Project 2](https://github.com/jm4c/SEC-file-server/wiki/Project-2:-Extending-the-file-system-to-support-smartcard-authentication)
 
 # Instructions for building the project
 Make sure to run the build file for the fs-client, fs-server, and fs-utils projects, so that the nedded libraries can be generated.
