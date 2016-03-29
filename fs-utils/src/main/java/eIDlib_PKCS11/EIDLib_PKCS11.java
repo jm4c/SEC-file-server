@@ -19,7 +19,7 @@ import java.security.cert.X509Certificate;
 
 public class EIDLib_PKCS11 {
 
-    // Initializes the library
+    // Initializes the EIDLib
     public static PKCS11 initLib() throws Exception {
 
         System.loadLibrary("pteidlibj");
@@ -48,7 +48,7 @@ public class EIDLib_PKCS11 {
         return pkcs11;
     }
 
-    // Initializes the current session and asks user for authentication
+    // Begins a signing session. Asks for authentication
     public static long initSession(PKCS11 pkcs11) throws Exception {
         //Open the PKCS11 session
         long p11_session = pkcs11.C_OpenSession(0, PKCS11Constants.CKF_SERIAL_SESSION, null, null);
@@ -78,8 +78,8 @@ public class EIDLib_PKCS11 {
         return p11_session;
     }
 
-    // Closes the currently open session. MUST be called after using the lib
-    public static void closeSession() throws Exception {
+    // Closes the EIDLib. MUST be called after use
+    public static void closeLib() throws Exception {
         pteid.Exit(pteid.PTEID_EXIT_LEAVE_CARD);
     }
 

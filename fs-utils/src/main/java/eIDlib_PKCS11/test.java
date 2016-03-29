@@ -13,6 +13,11 @@ public class test {
             //Initializing the Library
             System.out.println("        //Initializing the Library");
             PKCS11 pkcs11 = EIDLib_PKCS11.initLib(); 
+
+            //Retrieving the cert
+            System.out.println("        //Retrieving the cert");
+            X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
+            PublicKey PKey = cert.getPublicKey();
             
             //Initializing the Session
             System.out.println("        //Initializing the Session");
@@ -21,15 +26,10 @@ public class test {
             //Signing the data
             System.out.println("        //Signing the data");
             byte[] signature = pkcs11.C_Sign(p11_session, "data".getBytes(Charset.forName("UTF-8")));
-            
-            //Retrieving the cert
-            System.out.println("        //Retrieving the cert");
-            X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
-            PublicKey PKey = cert.getPublicKey();
-            
-            //Closing the session
-            System.out.println("        //Closing the session");
-            EIDLib_PKCS11.closeSession();
+              
+            //Closing the library
+            System.out.println("        //Closing the library");
+            EIDLib_PKCS11.closeLib();
 
         }  catch (Throwable e)
         {

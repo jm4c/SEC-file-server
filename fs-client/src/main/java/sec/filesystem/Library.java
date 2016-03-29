@@ -1,25 +1,30 @@
 package sec.filesystem;
 
+import eIDlib_PKCS11.EIDLib_PKCS11;
 import exceptions.IDMismatchException;
 import exceptions.NullContentException;
 import interfaces.InterfaceBlockServer;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import sun.security.pkcs11.wrapper.PKCS11;
 import types.*;
 import utils.CryptoUtils;
 import utils.HashUtils;
 
 public class Library {
+
+    private static final boolean SMARTCARDPRESET = false;
 
     private PrivateKey privateKey;
     private Pk_t publicKey;
@@ -43,6 +48,10 @@ public class Library {
 
     private void setPublicKey(KeyPair kp) {
         this.publicKey = new Pk_t(kp.getPublic());
+    }
+
+    private void setPublicKey(X509Certificate cert) {
+        this.publicKey = new Pk_t(cert.getPublicKey());
     }
 
     protected Id_t getClientID() {
@@ -86,9 +95,9 @@ public class Library {
         byte[] b = new byte[(filesArray.length - 1) * InterfaceBlockServer.BLOCK_MAX_SIZE + filesArray[filesArray.length - 1].length];
         int ptr = 0;
 
-        for (int i = 0; i < filesArray.length; i++) {
-            System.arraycopy(filesArray[i], 0, b, ptr, filesArray[i].length);
-            ptr += filesArray[i].length;
+        for (byte[] filesArray1 : filesArray) {
+            System.arraycopy(filesArray1, 0, b, ptr, filesArray1.length);
+            ptr += filesArray1.length;
         }
 
         Buffer_t content = new Buffer_t(b);
@@ -97,27 +106,31 @@ public class Library {
 
     }
 
-    protected List fs_list(){
-        try {
-            return server.getPKeyList();
-        } catch (Exception ex) {
-            final String message = "Unable to retrieve Public Key list.";
-            Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);
-            return null;
-        }
-    }
-
     protected Id_t fs_init() throws Exception {
-        KeyPair kp = CryptoUtils.setKeyPair();
-
-        setPrivateKey(kp);
-        setPublicKey(kp);
+        PKCS11 pkcs11;
+        if (!SMARTCARDPRESET) {
+            KeyPair kp = CryptoUtils.setKeyPair();
+            setPrivateKey(kp);
+            setPublicKey(kp);
+        } else {
+            pkcs11 = EIDLib_PKCS11.initLib();
+            X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
+            setPublicKey(cert);
+        }
 
         //current (empty) header file
-        List<Id_t> emptyFileList = new ArrayList<Id_t>();
+        List<Id_t> emptyFileList = new ArrayList<>();
         Header_t header = new Header_t(emptyFileList);
         Data_t headerData = new Data_t(CryptoUtils.serialize(header));
-        Sig_t signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
+
+        Sig_t signature;
+        long p11_session;
+        if (!SMARTCARDPRESET) {
+            signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
+        } else {
+            p11_session = EIDLib_PKCS11.initSession(pkcs11);
+            signature = new Sig_t(pkcs11.C_Sign(p11_session, "data".getBytes(Charset.forName("UTF-8"))));
+        }
 
         Registry myReg = LocateRegistry.getRegistry("localhost");
         server = (InterfaceBlockServer) myReg.lookup("fs.Server");
@@ -125,6 +138,10 @@ public class Library {
 
         System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
         setClientID(server.put_k(headerData, signature, getPublicKey()));
+
+        if (SMARTCARDPRESET) {
+            EIDLib_PKCS11.closeLib();
+        }
 
         return getClientID();
     }
@@ -206,7 +223,7 @@ public class Library {
             for (int i = 0; i < filesArray.length; i++) {
                 newFileList.add(new Id_t(HashUtils.hash(filesArray[i], null)));
             }
-            
+
             Header_t header = new Header_t(newFileList);
 
             Data_t headerData = new Data_t(CryptoUtils.serialize(header));
@@ -251,6 +268,16 @@ public class Library {
         } catch (Exception ex) {
             final String message = "Unable to furfill write request.";
             Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);
+        }
+    }
+
+    protected List fs_list() {
+        try {
+            return server.getPKeyList();
+        } catch (Exception ex) {
+            final String message = "Unable to retrieve Public Key list.";
+            Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);
+            return null;
         }
     }
 }
