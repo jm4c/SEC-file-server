@@ -43,7 +43,7 @@ public class DemoReadWriteLargeFile {
             
             // Reading all the data that was just written to the file
             System.out.println("Reading the data that was just written to the file...");
-            int bytesRead = c.fs_read(c.getClientID(), 0, buffer.getValue().length, buffer);
+            int bytesRead = c.fs_read(c.getPublicKey(), 0, buffer.getValue().length, buffer);
             String received = printHexBinary(buffer.getValue());
             System.out.println("Done!");
             System.out.println("Number of bytes that were read: " + bytesRead);

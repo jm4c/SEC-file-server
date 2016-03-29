@@ -62,7 +62,7 @@ public class Library {
         return privateKey;
     }
 
-    private Pk_t getPublicKey() {
+    protected Pk_t getPublicKey() {
         return publicKey;
     }
 
@@ -146,8 +146,9 @@ public class Library {
         return getClientID();
     }
 
-    protected int fs_read(Id_t id, int pos, int size, Buffer_t contents) throws IOException {
+    protected int fs_read(Pk_t pk, int pos, int size, Buffer_t contents) throws IOException {
         try {
+            Id_t id = server.getID(pk);
             Data_t data = server.get(id);
 
             @SuppressWarnings("unchecked")

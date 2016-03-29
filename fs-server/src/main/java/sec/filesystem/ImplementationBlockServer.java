@@ -22,7 +22,7 @@ import utils.CryptoUtils;
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
     private static final long serialVersionUID = 1L;
-    private final List<Id_t> headerFiles;
+    private final List<Pk_t> headerFiles;
 
     public ImplementationBlockServer() throws RemoteException {
         headerFiles = new ArrayList<>();
@@ -50,7 +50,20 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     public List getPKeyList() throws RemoteException {
         return headerFiles;
     }
-        
+
+    @Override
+    public Id_t getID(Pk_t pk) throws RemoteException {
+        Id_t id;
+        try {
+            id = calculateBlockID(pk);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return id;
+    }
+
+    @Override
     public Data_t get(Id_t id) throws RemoteException {
         PublicKeyBlock b = null;
         // Main/Header block
@@ -98,22 +111,21 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             System.out.println("signature is valid");
 
             Id_t id = calculateBlockID(public_key);
-            
-            boolean headerAlreadyExists = headerFiles.contains(id);
+
+            boolean headerAlreadyExists = headerFiles.contains(public_key);
             //check timestamp
             if (headerAlreadyExists) {
-            	Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
-            	Timestamp newTimestamp = ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
-            	if(!newTimestamp.after(oldTimestamp))
-            		throw new WrongHeaderSequenceException("New header's timestamp is older than old header's timestamp");
+                Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
+                Timestamp newTimestamp = ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
+                if (!newTimestamp.after(oldTimestamp)) {
+                    throw new WrongHeaderSequenceException("New header's timestamp is older than old header's timestamp");
+                }
             }
-            
-            
+
             System.out.println(id.getValue());
             PublicKeyBlock b = new PublicKeyBlock(data, signature, public_key);
-            
-            //check timestamp
 
+            //check timestamp
             String s = id.getValue();
             new File("./files/").mkdirs();
             FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
@@ -122,10 +134,10 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             ObjectOutputStream oos = new ObjectOutputStream(fout);
             oos.writeObject(b);
             oos.close();
-            
+
             //adds header only AFTER writing 
             if (!headerAlreadyExists) {
-                headerFiles.add(id);
+                headerFiles.add(public_key);
             }
             return id;
         } catch (InvalidSignatureException ise) {

@@ -68,7 +68,7 @@ public class DemoReadCorruptContent {
             // Reading all the data that was just written to the file
             System.out.println("Reading the data that was just written to the file...");
             buffer.setValue(new byte[size]);
-            c.fs_read(c.getClientID(), 0, size, buffer);  
+            c.fs_read(c.getPublicKey(), 0, size, buffer);  
             
         } catch (Exception ex) {
             Logger.getLogger(DemoReadWriteLargeFile.class.getName()).log(Level.SEVERE, null, ex);

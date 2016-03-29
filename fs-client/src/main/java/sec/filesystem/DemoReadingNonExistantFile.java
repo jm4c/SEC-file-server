@@ -48,7 +48,7 @@ public class DemoReadingNonExistantFile {
 
             // Reading all the data that was just written to the file
             System.out.println("Reading the data that was just written to the file...");
-            c.fs_read(c.getClientID(), 0, buffer.getValue().length, buffer);
+            c.fs_read(c.getPublicKey(), 0, buffer.getValue().length, buffer);
             
         } catch (Exception ex) {
             Logger.getLogger(DemoReadingNonExistantFile.class.getName()).log(Level.SEVERE, null, ex);

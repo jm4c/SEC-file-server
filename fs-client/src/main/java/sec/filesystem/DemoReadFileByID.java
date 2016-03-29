@@ -54,7 +54,7 @@ public class DemoReadFileByID {
             System.out.println("CLIENT 2");
             System.out.println("Reading the data that was just written to the file...");
             buffer.setValue(new byte[size]);
-            int bytesRead = c2.fs_read(c1.getClientID(), 0, size, buffer);
+            int bytesRead = c2.fs_read(c1.getPublicKey(), 0, size, buffer);
             String received = printHexBinary(buffer.getValue());
             System.out.println("Done!");
             System.out.println("Number of bytes that were read: " + bytesRead);

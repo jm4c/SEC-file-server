@@ -3,9 +3,7 @@ package sec.filesystem;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import types.Buffer_t;
-import types.Id_t;
-import utils.CryptoUtils;
+import types.Pk_t;
 
 /*  Demo Class used for demonstrating a client connecting to the File Server, 
     and issuing a list command for the Public Key list.
@@ -30,7 +28,7 @@ public class DemoFetchPKeyList {
             
             // Reading the List of Public Keys
             System.out.println("Reading the Pulbic Key list...");
-            List<Id_t> pKeyList = c.fs_list();
+            List<Pk_t> pKeyList = c.fs_list();
             System.out.println("Done!");
             System.out.println("PKey List:");
             for (int i = 0; i < pKeyList.size(); i++) {

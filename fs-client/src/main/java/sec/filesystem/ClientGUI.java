@@ -194,7 +194,7 @@ public class ClientGUI extends javax.swing.JFrame {
         int size = Integer.parseInt(textsize);
         
         try {
-            int bytesRead = client.fs_read(client.getClientID(), pos, buffer.getValue().length, buffer);
+            int bytesRead = client.fs_read(client.getPublicKey(), pos, buffer.getValue().length, buffer);
             this.updateTextArea(bytesRead+"");
         } catch (IOException ex) {
             updateTextArea("Something wrong with reading");
