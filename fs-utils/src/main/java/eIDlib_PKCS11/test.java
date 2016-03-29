@@ -29,7 +29,7 @@ public class test {
               
             //Closing the library
             System.out.println("        //Closing the library");
-            EIDLib_PKCS11.closeLib();
+            EIDLib_PKCS11.closeLib(pkcs11, p11_session);
 
         }  catch (Throwable e)
         {

@@ -30,6 +30,9 @@ public class Library {
     private Pk_t publicKey;
     private Id_t clientID;
 
+    private long p11_session;
+    private PKCS11 pkcs11;
+
     private static InterfaceBlockServer server;
 
     private List fileList;
@@ -107,15 +110,16 @@ public class Library {
     }
 
     protected Id_t fs_init() throws Exception {
-        PKCS11 pkcs11;
-        if (!SMARTCARDSUPPORTED) {
+
+        if (SMARTCARDSUPPORTED) {
+            pkcs11 = EIDLib_PKCS11.initLib();
+            p11_session = EIDLib_PKCS11.initSession(pkcs11);
+            X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
+            setPublicKey(cert);
+        } else {
             KeyPair kp = CryptoUtils.setKeyPair();
             setPrivateKey(kp);
             setPublicKey(kp);
-        } else {
-            pkcs11 = EIDLib_PKCS11.initLib();
-            X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
-            setPublicKey(cert);
         }
 
         //current (empty) header file
@@ -124,12 +128,10 @@ public class Library {
         Data_t headerData = new Data_t(CryptoUtils.serialize(header));
 
         Sig_t signature;
-        long p11_session;
-        if (!SMARTCARDSUPPORTED) {
-            signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
+        if (SMARTCARDSUPPORTED) {
+            signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
         } else {
-            p11_session = EIDLib_PKCS11.initSession(pkcs11);
-            signature = new Sig_t(pkcs11.C_Sign(p11_session, "data".getBytes(Charset.forName("UTF-8"))));
+            signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
         }
 
         Registry myReg = LocateRegistry.getRegistry("localhost");
@@ -140,10 +142,15 @@ public class Library {
         setClientID(server.put_k(headerData, signature, getPublicKey()));
 
         if (SMARTCARDSUPPORTED) {
-            EIDLib_PKCS11.closeLib();
+            EIDLib_PKCS11.closeLib(pkcs11, p11_session);
         }
-
         return getClientID();
+    }
+
+    protected void fs_close() throws Exception {
+        if (SMARTCARDSUPPORTED) {
+            EIDLib_PKCS11.closeLib(pkcs11, p11_session);
+        }
     }
 
     protected int fs_read(Pk_t pk, int pos, int size, Buffer_t contents) throws IOException {
@@ -180,16 +187,17 @@ public class Library {
         }
     }
 
-    protected void fs_write(int pos, int size, Buffer_t contents) {
+    protected void fs_write(int pos, int size, Buffer_t contents) throws Exception {
+        if (SMARTCARDSUPPORTED) {
+            pkcs11 = EIDLib_PKCS11.initLib();
+            p11_session = EIDLib_PKCS11.initSession(pkcs11);
+            X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
+            setPublicKey(cert);
+        }
         System.out.println("\nNew FS write");
         try {
             if (contents == null) {
                 throw new NullContentException("Content is null");
-            }
-
-            PKCS11 pkcs11;
-            if (SMARTCARDSUPPORTED) {
-                pkcs11 = EIDLib_PKCS11.initLib();
             }
 
             System.out.println(this.getClientID().getValue());
@@ -234,13 +242,10 @@ public class Library {
 
             Data_t headerData = new Data_t(CryptoUtils.serialize(header));
             Sig_t signature;
-            long p11_session;
-
-            if (!SMARTCARDSUPPORTED) {
-                signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
+            if (SMARTCARDSUPPORTED) {
+                signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
             } else {
-                p11_session = EIDLib_PKCS11.initSession(pkcs11);
-                signature = new Sig_t(pkcs11.C_Sign(p11_session, "data".getBytes(Charset.forName("UTF-8"))));
+                signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
             }
 
             //uploads header first to check signature
@@ -279,12 +284,12 @@ public class Library {
             }
             this.setFileList(newFileList);
 
-            if (SMARTCARDSUPPORTED) {
-                EIDLib_PKCS11.closeLib();
-            }
         } catch (Exception ex) {
             final String message = "Unable to furfill write request.";
             Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);
+        }
+        if (SMARTCARDSUPPORTED) {
+            EIDLib_PKCS11.closeLib(pkcs11, p11_session);
         }
     }
 

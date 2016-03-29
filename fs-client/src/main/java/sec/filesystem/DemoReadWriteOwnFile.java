@@ -52,6 +52,12 @@ public class DemoReadWriteOwnFile {
             System.out.println("String.compareTo(sent,received) returns:" + sent.compareTo(received));
             System.out.println("---------------------------------------------------------\n");            
             
+            // Closing the file system
+            System.out.println("Closing the File System...");
+            //c.fs_close();
+            System.out.println("Done!");
+            System.out.println("---------------------------------------------------------\n");
+            
         } catch (Exception ex) {
             System.out.println("[Catch] Exception: " + ex.getMessage());
             Logger.getLogger(DemoReadWriteOwnFile.class.getName()).log(Level.SEVERE, null, ex);

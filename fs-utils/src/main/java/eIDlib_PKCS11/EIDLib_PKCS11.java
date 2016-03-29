@@ -77,9 +77,10 @@ public class EIDLib_PKCS11 {
 
         return p11_session;
     }
-
+        
     // Closes the EIDLib. MUST be called after use
-    public static void closeLib() throws Exception {
+    public static void closeLib(PKCS11 pkcs11, long p11_session) throws Exception {
+        pkcs11.C_CloseSession(p11_session);
         pteid.Exit(pteid.PTEID_EXIT_LEAVE_CARD);
     }
 
