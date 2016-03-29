@@ -9,10 +9,12 @@ import java.rmi.server.UnicastRemoteObject;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 import exceptions.InvalidSignatureException;
+import exceptions.WrongHeaderSequenceException;
 import types.*;
 import utils.HashUtils;
 import utils.CryptoUtils;
@@ -96,8 +98,21 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             System.out.println("signature is valid");
 
             Id_t id = calculateBlockID(public_key);
+            
+            boolean headerAlreadyExists = headerFiles.contains(id);
+            //check timestamp
+            if (headerAlreadyExists) {
+            	Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
+            	Timestamp newTimestamp = ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
+            	if(!newTimestamp.after(oldTimestamp))
+            		throw new WrongHeaderSequenceException("New header's timestamp is older than old header's timestamp");
+            }
+            
+            
             System.out.println(id.getValue());
             PublicKeyBlock b = new PublicKeyBlock(data, signature, public_key);
+            
+            //check timestamp
 
             String s = id.getValue();
             new File("./files/").mkdirs();
@@ -107,7 +122,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             ObjectOutputStream oos = new ObjectOutputStream(fout);
             oos.writeObject(b);
             oos.close();
-            if (!headerFiles.contains(id)) {
+            
+            //adds header only AFTER writing 
+            if (!headerAlreadyExists) {
                 headerFiles.add(id);
             }
             return id;
