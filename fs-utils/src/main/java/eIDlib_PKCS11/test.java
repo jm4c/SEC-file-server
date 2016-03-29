@@ -1,24 +1,35 @@
 package eIDlib_PKCS11;
 
 import java.nio.charset.Charset;
+import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import sun.security.pkcs11.wrapper.PKCS11;
 
 public class test {
     
-    public static void main(String args[])  {
-        java.util.Base64.Encoder encoder = java.util.Base64.getEncoder();       
+    public static void main(String args[])  {      
         try
-        {
-            eIDLib_PKCS11_test.initLib();    
-            PKCS11 pkcs11 = eIDLib_PKCS11_test.initPKCS11();
-            long p11_session = eIDLib_PKCS11_test.initSession(pkcs11);
-
-            // sign
-            System.out.println("            //sign");
-            byte[] signature = pkcs11.C_Sign(p11_session, "data".getBytes(Charset.forName("UTF-8")));
-            System.out.println("            //signature:"+encoder.encode(signature));
+        {  
+            //Initializing the Library
+            System.out.println("        //Initializing the Library");
+            PKCS11 pkcs11 = EIDLib_PKCS11.initLib(); 
             
-            eIDLib_PKCS11_test.closeSession();
+            //Initializing the Session
+            System.out.println("        //Initializing the Session");
+            long p11_session = EIDLib_PKCS11.initSession(pkcs11);
+
+            //Signing the data
+            System.out.println("        //Signing the data");
+            byte[] signature = pkcs11.C_Sign(p11_session, "data".getBytes(Charset.forName("UTF-8")));
+            
+            //Retrieving the cert
+            System.out.println("        //Retrieving the cert");
+            X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
+            PublicKey PKey = cert.getPublicKey();
+            
+            //Closing the session
+            System.out.println("        //Closing the session");
+            EIDLib_PKCS11.closeSession();
 
         }  catch (Throwable e)
         {
