@@ -37,6 +37,7 @@ public class DemoFetchPKeyList {
             System.out.println("---------------------------------------------------------\n");                
             
         } catch (Exception ex) {
+            System.out.println("[Catch] Exception: " + ex.getMessage());
             Logger.getLogger(DemoFetchPKeyList.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

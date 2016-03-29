@@ -24,7 +24,7 @@ import utils.HashUtils;
 
 public class Library {
 
-    private static final boolean SMARTCARDPRESET = false;
+    private static final boolean SMARTCARDSUPPORTED = true;
 
     private PrivateKey privateKey;
     private Pk_t publicKey;
@@ -108,7 +108,7 @@ public class Library {
 
     protected Id_t fs_init() throws Exception {
         PKCS11 pkcs11;
-        if (!SMARTCARDPRESET) {
+        if (!SMARTCARDSUPPORTED) {
             KeyPair kp = CryptoUtils.setKeyPair();
             setPrivateKey(kp);
             setPublicKey(kp);
@@ -125,7 +125,7 @@ public class Library {
 
         Sig_t signature;
         long p11_session;
-        if (!SMARTCARDPRESET) {
+        if (!SMARTCARDSUPPORTED) {
             signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
         } else {
             p11_session = EIDLib_PKCS11.initSession(pkcs11);
@@ -139,7 +139,7 @@ public class Library {
         System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
         setClientID(server.put_k(headerData, signature, getPublicKey()));
 
-        if (SMARTCARDPRESET) {
+        if (SMARTCARDSUPPORTED) {
             EIDLib_PKCS11.closeLib();
         }
 
@@ -187,6 +187,11 @@ public class Library {
                 throw new NullContentException("Content is null");
             }
 
+            PKCS11 pkcs11;
+            if (SMARTCARDSUPPORTED) {
+                pkcs11 = EIDLib_PKCS11.initLib();
+            }
+
             System.out.println(this.getClientID().getValue());
             //Client's ID can only be a header file
             Data_t data = server.get(this.getClientID());
@@ -198,7 +203,7 @@ public class Library {
             @SuppressWarnings("unchecked")
             List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
 
-            Buffer_t base = null;
+            Buffer_t base;
 
             if (originalFileList.isEmpty()) {
                 base = new Buffer_t(new byte[pos + size]);
@@ -220,15 +225,23 @@ public class Library {
 
             byte[][] filesArray = splitContent(base);
 
-            List<Id_t> newFileList = new ArrayList<Id_t>();
-            for (int i = 0; i < filesArray.length; i++) {
-                newFileList.add(new Id_t(HashUtils.hash(filesArray[i], null)));
+            List<Id_t> newFileList = new ArrayList<>();
+            for (byte[] filesArray1 : filesArray) {
+                newFileList.add(new Id_t(HashUtils.hash(filesArray1, null)));
             }
 
             Header_t header = new Header_t(newFileList);
 
             Data_t headerData = new Data_t(CryptoUtils.serialize(header));
-            Sig_t signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
+            Sig_t signature;
+            long p11_session;
+
+            if (!SMARTCARDSUPPORTED) {
+                signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
+            } else {
+                p11_session = EIDLib_PKCS11.initSession(pkcs11);
+                signature = new Sig_t(pkcs11.C_Sign(p11_session, "data".getBytes(Charset.forName("UTF-8"))));
+            }
 
             //uploads header first to check signature
             if (!getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
@@ -266,6 +279,9 @@ public class Library {
             }
             this.setFileList(newFileList);
 
+            if (SMARTCARDSUPPORTED) {
+                EIDLib_PKCS11.closeLib();
+            }
         } catch (Exception ex) {
             final String message = "Unable to furfill write request.";
             Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);

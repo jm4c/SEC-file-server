@@ -58,6 +58,7 @@ public class DemoWriteToAnotherClientsFile {
             c2.fs_write(0, buffer.getValue().length, buffer);       
             
         } catch (Exception ex) {
+            System.out.println("[Catch] Exception: " + ex.getMessage());
             Logger.getLogger(DemoReadFileByID.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

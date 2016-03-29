@@ -51,6 +51,7 @@ public class DemoReadingNonExistantFile {
             c.fs_read(c.getPublicKey(), 0, buffer.getValue().length, buffer);
             
         } catch (Exception ex) {
+            System.out.println("[Catch] Exception: " + ex.getMessage());
             Logger.getLogger(DemoReadingNonExistantFile.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

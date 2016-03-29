@@ -59,6 +59,7 @@ public class DemoReadMissingContent {
             c.fs_read(c.getPublicKey(), 0, size, buffer);
 
         } catch (Exception ex) {
+            System.out.println("[Catch] Exception: " + ex.getMessage());
             Logger.getLogger(DemoReadWriteLargeFile.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

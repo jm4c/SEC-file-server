@@ -53,6 +53,7 @@ public class DemoReadWriteOwnFile {
             System.out.println("---------------------------------------------------------\n");            
             
         } catch (Exception ex) {
+            System.out.println("[Catch] Exception: " + ex.getMessage());
             Logger.getLogger(DemoReadWriteOwnFile.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
