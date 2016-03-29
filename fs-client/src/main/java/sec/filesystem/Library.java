@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -113,7 +114,8 @@ public class Library {
         setPublicKey(kp);
 
         //current (empty) header file
-        List<Id_t> header = new ArrayList<Id_t>();
+        List<Id_t> emptyFileList = new ArrayList<Id_t>();
+        Header_t header = new Header_t(emptyFileList);
         Data_t headerData = new Data_t(CryptoUtils.serialize(header));
         Sig_t signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
 
@@ -132,7 +134,7 @@ public class Library {
             Data_t data = server.get(id);
 
             @SuppressWarnings("unchecked")
-            List<Id_t> originalFileList = (List<Id_t>) CryptoUtils.deserialize(data.getValue());
+            List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
 
             byte[][] originalContentParts = new byte[originalFileList.size()][];
             for (int i = 0; i < originalFileList.size(); i++) {
@@ -176,7 +178,7 @@ public class Library {
             }
             //Header file's data is always a list of other files' IDs
             @SuppressWarnings("unchecked")
-            List<Id_t> originalFileList = (List<Id_t>) CryptoUtils.deserialize(data.getValue());
+            List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
 
             Buffer_t base = null;
 
@@ -204,8 +206,10 @@ public class Library {
             for (int i = 0; i < filesArray.length; i++) {
                 newFileList.add(new Id_t(HashUtils.hash(filesArray[i], null)));
             }
+            
+            Header_t header = new Header_t(newFileList);
 
-            Data_t headerData = new Data_t(CryptoUtils.serialize(newFileList));
+            Data_t headerData = new Data_t(CryptoUtils.serialize(header));
             Sig_t signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
 
             //uploads header first to check signature
