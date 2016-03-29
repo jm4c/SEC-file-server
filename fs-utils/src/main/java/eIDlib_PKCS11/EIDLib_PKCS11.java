@@ -83,7 +83,7 @@ public class EIDLib_PKCS11 {
         pteid.Exit(pteid.PTEID_EXIT_LEAVE_CARD);
     }
 
-    // Returns the n-th certificate, starting from 0
+    //Encodes the n-th certificate in ByteArray form, starting from 0
     private static byte[] getCertificateInBytes(int n) {
         byte[] certificate_bytes = null;
         try {
@@ -97,11 +97,12 @@ public class EIDLib_PKCS11 {
         return certificate_bytes;
     }
 
-    //Returns the CITIZEN AUTHENTICATION CERTIFICATE
+    //Returns the encoded CITIZEN AUTHENTICATION CERTIFICATE
     public static byte[] getCitizenAuthCertInBytes() {
         return getCertificateInBytes(0); //certificado 0 no Cartao do Cidadao eh o de autenticacao
     }
 
+    //Decodes the certificate from its ByteArray form
     public static X509Certificate getCertFromByteArray(byte[] certificateEncoded) throws CertificateException {
         CertificateFactory f = CertificateFactory.getInstance("X.509");
         InputStream in = new ByteArrayInputStream(certificateEncoded);
