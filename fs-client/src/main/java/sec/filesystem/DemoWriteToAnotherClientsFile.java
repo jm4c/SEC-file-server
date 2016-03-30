@@ -31,7 +31,7 @@ public class DemoWriteToAnotherClientsFile {
             // Initializing the file system for client 1
             System.out.println("CLIENT 1");
             System.out.println("Initializing the File System...");
-            c1.fs_init();
+            c1.setClientID(c1.fs_init());
             System.out.println("Done!");
             System.out.println("Client ID assigned by server: " + c1.getClientID().getValue());
             System.out.println("---------------------------------------------------------\n");
@@ -39,7 +39,7 @@ public class DemoWriteToAnotherClientsFile {
             // Initializing the file system for client 2
             System.out.println("CLIENT 2");
             System.out.println("Initializing the File System...");
-            c2.fs_init();
+            c2.setClientID(c2.fs_init());
             System.out.println("Done!");
             System.out.println("Client ID assigned by server: " + c2.getClientID().getValue());
             System.out.println("---------------------------------------------------------\n");

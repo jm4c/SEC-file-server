@@ -15,6 +15,7 @@ import java.util.List;
 
 import exceptions.InvalidSignatureException;
 import exceptions.WrongHeaderSequenceException;
+import java.security.PublicKey;
 import java.security.cert.Certificate;
 import types.*;
 import utils.HashUtils;
@@ -24,10 +25,11 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
     private static final long serialVersionUID = 1L;
     private final List<Pk_t> pKeyList;
+    private final List<Certificate> certList;
 
     public ImplementationBlockServer() throws RemoteException {
         pKeyList = new ArrayList<>();
-
+        certList = new ArrayList<>();
     }
 
     private boolean verifyIntegrity(PublicKeyBlock b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
@@ -47,16 +49,44 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         return new Id_t(hash);
     }
 
-    @Override
-    public List readPubKeys() throws RemoteException {
-        return pKeyList;
+    private boolean pKeyAlreadyStored(List<Certificate> certList, PublicKey public_key) {
+        boolean alreadyStored = false;
+        for (Certificate cert : certList) {
+            if (cert.getPublicKey().hashCode() == public_key.hashCode()) {
+                alreadyStored = true;
+            }
+        }
+        return alreadyStored;
     }
 
     @Override
-    public boolean storePubKey(Pk_t public_key) throws RemoteException {
-        boolean pKeyExists = pKeyList.contains(public_key);
-        if (!pKeyExists) {
-            pKeyList.add(public_key);
+    public List readPubKeys() throws RemoteException {
+        List<PublicKey> keyList = new ArrayList<>();
+        
+        for (Certificate cert : certList) {
+            keyList.add(cert.getPublicKey());
+        }
+        for (Pk_t key : pKeyList) {
+            keyList.add(key.getValue());
+        }
+        return keyList;
+    }
+
+    @Override
+    public boolean storePubKey(Certificate cert) throws RemoteException {
+        boolean certExists = certList.contains(cert);
+        if (!certExists) {
+            certList.add(cert);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean storePubKey(Pk_t key) throws RemoteException {
+        boolean keyExists = pKeyList.contains(key);
+        if (!keyExists) {
+            pKeyList.add(key);
             return true;
         }
         return false;
@@ -111,7 +141,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
             Id_t id = calculateBlockID(public_key);
 
-            boolean headerAlreadyExists = pKeyList.contains(public_key);
+            //check if publicKey is already stored
+            boolean headerAlreadyExists = pKeyAlreadyStored(certList, public_key.getValue());
+
             //check timestamp
             if (headerAlreadyExists) {
                 Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
@@ -134,7 +166,6 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             oos.writeObject(b);
             oos.close();
 
-            //adds header only AFTER writing 
             return id;
         } catch (InvalidSignatureException ise) {
             ise.printStackTrace();
@@ -157,7 +188,6 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             ObjectOutputStream oos = new ObjectOutputStream(fout);
             oos.writeObject(data);
             oos.close();
-//            storeBlock(id, s);
 
             return id;
 

@@ -2,6 +2,7 @@ package interfaces;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.security.cert.Certificate;
 import java.util.List;
 import types.*;
 
@@ -13,8 +14,10 @@ public interface InterfaceBlockServer extends Remote {
     public String greeting() throws RemoteException;
     
     public List readPubKeys() throws RemoteException;
-
-    public boolean storePubKey(Pk_t public_key) throws RemoteException;
+    
+    public boolean storePubKey(Pk_t key) throws RemoteException;
+    
+    public boolean storePubKey(Certificate cert) throws RemoteException;
     
     public Data_t get(Id_t id) throws RemoteException;
 
