@@ -31,7 +31,7 @@ public class DemoReadCorruptContent {
             
             // Initializing the file system
             System.out.println("Initializing the File System...");
-            c.fs_init();
+            c.setClientID(c.fs_init());
             System.out.println("Done!");
             System.out.println("Client ID assigned by server: " + c.getClientID().getValue());
             System.out.println("---------------------------------------------------------\n");

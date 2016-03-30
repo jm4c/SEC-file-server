@@ -1,5 +1,7 @@
 package sec.filesystem;
 
+import java.security.PublicKey;
+import java.security.cert.Certificate;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,18 +23,19 @@ public class DemoFetchPKeyList {
             
             // Initializing the file system
             System.out.println("Initializing the File System...");
-            c.fs_init();
+            c.setClientID(c.fs_init());
             System.out.println("Done!");
             System.out.println("Client ID assigned by server: " + c.getClientID().getValue());
             System.out.println("---------------------------------------------------------\n");
             
             // Reading the List of Public Keys
-            System.out.println("Reading the Pulbic Key list...");
-            List<Pk_t> pKeyList = c.fs_list();
+            System.out.println("Reading the Public Key list...");
+            List<PublicKey> pKeyList = c.fs_list();
             System.out.println("Done!");
-            System.out.println("PKey List:");
-            for (int i = 0; i < pKeyList.size(); i++) {
-                System.out.println("   " + pKeyList.get(i).getValue());
+            
+            System.out.println("PKey List:");    
+            for (PublicKey pkey : pKeyList) {
+                System.out.println("   " + pkey);
             }
             System.out.println("---------------------------------------------------------\n");                
             
