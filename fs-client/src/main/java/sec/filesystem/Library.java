@@ -5,7 +5,6 @@ import exceptions.IDMismatchException;
 import exceptions.NullContentException;
 import interfaces.InterfaceBlockServer;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.KeyPair;
@@ -24,7 +23,7 @@ import utils.HashUtils;
 
 public class Library {
 
-    private static final boolean SMARTCARDSUPPORTED = false;
+    protected static final boolean SMARTCARDSUPPORTED = false;
 
     private PrivateKey privateKey;
     private Pk_t publicKey;
@@ -33,7 +32,7 @@ public class Library {
     private long p11_session;
     private PKCS11 pkcs11;
 
-    private static InterfaceBlockServer server;
+    protected static InterfaceBlockServer server;
 
     private List fileList;
 
@@ -45,19 +44,19 @@ public class Library {
         this.clientID = headerID;
     }
 
-    private void setPrivateKey(KeyPair kp) {
+    protected void setPrivateKey(KeyPair kp) {
         this.privateKey = kp.getPrivate();
     }
 
     protected void setPublicKey(Pk_t key) {
         this.publicKey = key;
     }
-
-    private void setPublicKey(KeyPair kp) {
+       
+    protected void setPublicKey(KeyPair kp) {
         this.publicKey = new Pk_t(kp.getPublic());
     }
 
-    private void setPublicKey(X509Certificate cert) {
+    protected void setPublicKey(X509Certificate cert) {
         this.publicKey = new Pk_t(cert.getPublicKey());
     }
 
@@ -114,19 +113,18 @@ public class Library {
     }
 
     protected Id_t fs_init() throws Exception {
-        X509Certificate cert;
 
         if (SMARTCARDSUPPORTED) {
             pkcs11 = EIDLib_PKCS11.initLib();
             p11_session = EIDLib_PKCS11.initSession(pkcs11);
-            cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
+            X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
             setPublicKey(cert);
         } else {
             KeyPair kp = CryptoUtils.setKeyPair();
             setPrivateKey(kp);
             setPublicKey(kp);
         }
-
+        
         //current (empty) header file
         List<Id_t> emptyFileList = new ArrayList<>();
         Header_t header = new Header_t(emptyFileList);
@@ -144,15 +142,13 @@ public class Library {
         System.out.println(server.greeting() + "\n");
 
         System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
-        Id_t id = server.put_k(headerData, signature, getPublicKey());
-        
+        setClientID(server.put_k(headerData, signature, getPublicKey()));
+        server.storePubKey(this.getPublicKey());
+
         if (SMARTCARDSUPPORTED) {
-            server.storePubKey(cert);
             EIDLib_PKCS11.closeLib(pkcs11, p11_session);
-        } else {
-            server.storePubKey(getPublicKey());
         }
-        return id;
+        return getClientID();
     }
 
     protected void fs_close() throws Exception {
@@ -196,12 +192,10 @@ public class Library {
     }
 
     protected void fs_write(int pos, int size, Buffer_t contents) throws Exception {
-        X509Certificate cert;
-
         if (SMARTCARDSUPPORTED) {
             pkcs11 = EIDLib_PKCS11.initLib();
             p11_session = EIDLib_PKCS11.initSession(pkcs11);
-            cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
+            X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
             setPublicKey(cert);
         }
         System.out.println("\nNew FS write");
@@ -209,7 +203,8 @@ public class Library {
             if (contents == null) {
                 throw new NullContentException("Content is null");
             }
-
+            
+                    
             System.out.println(this.getClientID().getValue());
             //Client's ID can only be a header file
             Data_t data = server.get(this.getClientID());
@@ -260,11 +255,7 @@ public class Library {
 
             //uploads header first to check signature
             if (getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
-                if (SMARTCARDSUPPORTED) {
-                    server.storePubKey(cert);
-                } else {
-                    server.storePubKey(getPublicKey());
-                }
+                server.storePubKey(this.getPublicKey());
             } else {
                 throw new IDMismatchException("Client's ID does not match main block ID!");
             }

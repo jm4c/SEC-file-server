@@ -45,14 +45,14 @@ public class CryptoUtils {
     }
 
     public static byte[] sign(byte[] unsignedData, PrivateKey prvKey) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        Signature sig = Signature.getInstance("SHA256withRSA");
+        Signature sig = Signature.getInstance("SHA1withRSA");
         sig.initSign(prvKey);
         sig.update(unsignedData);
         return sig.sign();
     }
 
     public static boolean verify(byte[] signedData, PublicKey pubKey, byte[] signature) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        Signature sig = Signature.getInstance("SHA256withRSA");
+        Signature sig = Signature.getInstance("SHA1withRSA");
         sig.initVerify(pubKey);
         sig.update(signedData);
         return sig.verify(signature);

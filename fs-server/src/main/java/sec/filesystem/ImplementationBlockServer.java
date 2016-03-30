@@ -142,15 +142,20 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             Id_t id = calculateBlockID(public_key);
 
             //check if publicKey is already stored
+            //TODO fix headerAlreadyExists always false
             boolean headerAlreadyExists = pKeyAlreadyStored(certList, public_key.getValue());
+            System.out.println("already exists:" + headerAlreadyExists);
 
             //check timestamp
             if (headerAlreadyExists) {
                 Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
                 Timestamp newTimestamp = ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
+                System.out.println(oldTimestamp.toString());
+                System.out.println(newTimestamp.toString());
                 if (!newTimestamp.after(oldTimestamp)) {
                     throw new WrongHeaderSequenceException("New header's timestamp is older than old header's timestamp");
                 }
+                
             }
 
             System.out.println(id.getValue());
