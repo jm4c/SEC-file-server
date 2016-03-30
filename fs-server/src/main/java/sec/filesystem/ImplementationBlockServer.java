@@ -15,6 +15,7 @@ import java.util.List;
 
 import exceptions.InvalidSignatureException;
 import exceptions.WrongHeaderSequenceException;
+import java.security.cert.Certificate;
 import types.*;
 import utils.HashUtils;
 import utils.CryptoUtils;
@@ -22,10 +23,10 @@ import utils.CryptoUtils;
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
     private static final long serialVersionUID = 1L;
-    private final List<Pk_t> headerFiles;
+    private final List<Pk_t> pKeyList;
 
     public ImplementationBlockServer() throws RemoteException {
-        headerFiles = new ArrayList<>();
+        pKeyList = new ArrayList<>();
 
     }
 
@@ -47,20 +48,18 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     @Override
-    public List getPKeyList() throws RemoteException {
-        return headerFiles;
+    public List readPubKeys() throws RemoteException {
+        return pKeyList;
     }
 
     @Override
-    public Id_t getID(Pk_t pk) throws RemoteException {
-        Id_t id;
-        try {
-            id = calculateBlockID(pk);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+    public boolean storePubKey(Pk_t public_key) throws RemoteException {
+        boolean pKeyExists = pKeyList.contains(public_key);
+        if (!pKeyExists) {
+            pKeyList.add(public_key);
+            return true;
         }
-        return id;
+        return false;
     }
 
     @Override
@@ -112,7 +111,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
             Id_t id = calculateBlockID(public_key);
 
-            boolean headerAlreadyExists = headerFiles.contains(public_key);
+            boolean headerAlreadyExists = pKeyList.contains(public_key);
             //check timestamp
             if (headerAlreadyExists) {
                 Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
@@ -136,9 +135,6 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             oos.close();
 
             //adds header only AFTER writing 
-            if (!headerAlreadyExists) {
-                headerFiles.add(public_key);
-            }
             return id;
         } catch (InvalidSignatureException ise) {
             ise.printStackTrace();
@@ -175,6 +171,18 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     @Override
     public String greeting() throws RemoteException {
         return "Hello There!";
+    }
+
+    @Override
+    public Id_t getID(Pk_t pk) throws RemoteException {
+        Id_t id;
+        try {
+            id = calculateBlockID(pk);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return id;
     }
 
 }

@@ -34,7 +34,7 @@ public class DemoReadWriteLargeFile {
                 s = s.concat(s);
             }
             buffer.setValue(CryptoUtils.serialize(s));
-            System.out.println("Writing some data of size " + buffer.getValue().length + "to the file, at pos 0 ...");
+            System.out.println("Writing some data of size " + buffer.getValue().length + " to the file, at pos 0 ...");
             c.fs_write(0, buffer.getValue().length, buffer);
             String sent = printHexBinary(buffer.getValue());
             System.out.println("Done!");

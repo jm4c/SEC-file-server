@@ -31,7 +31,7 @@ public class DemoReadWriteOwnFile {
             // Writing to the file at position 0
             String s = "The quick brown fox jumps over the lazy dog";
             buffer.setValue(CryptoUtils.serialize(s));
-            System.out.println("Writing some data of size " + buffer.getValue().length + "to the file, at pos 0 ...");
+            System.out.println("Writing some data of size " + buffer.getValue().length + " to the file, at pos 0 ...");
             c.fs_write(0, buffer.getValue().length, buffer);
             String sent = printHexBinary(buffer.getValue());
             System.out.println("Done!");

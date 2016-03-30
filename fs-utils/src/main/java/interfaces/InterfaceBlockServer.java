@@ -12,8 +12,10 @@ public interface InterfaceBlockServer extends Remote {
     //Temporary greeting method for testing
     public String greeting() throws RemoteException;
     
-    public List getPKeyList() throws RemoteException;
+    public List readPubKeys() throws RemoteException;
 
+    public boolean storePubKey(Pk_t public_key) throws RemoteException;
+    
     public Data_t get(Id_t id) throws RemoteException;
 
     public Id_t getID(Pk_t pk) throws RemoteException;

@@ -28,6 +28,7 @@ public class ClientGUI extends javax.swing.JFrame {
             try {
                 buffer = new Buffer_t(CryptoUtils.serialize(""));
             } catch (IOException ex) {
+                System.out.println("[Catch] Exception: " + ex.getMessage());
                 Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
             }
     }
@@ -171,7 +172,8 @@ public class ClientGUI extends javax.swing.JFrame {
                 buffer.setValue(CryptoUtils.serialize(textcontent));
                 client.fs_write(pos, buffer.getValue().length, buffer);
                 this.updateTextArea("Writing Complete with : " + textcontent);
-            } catch (IOException ex) {
+            } catch (Exception ex) {
+                System.out.println("[Catch] Exception: " + ex.getMessage());
                 Logger.getLogger(ClientGUI.class.getName()).log(Level.SEVERE, null, ex);
             }
     }//GEN-LAST:event_jToggleButton3ActionPerformed
@@ -197,6 +199,7 @@ public class ClientGUI extends javax.swing.JFrame {
             int bytesRead = client.fs_read(client.getPublicKey(), pos, buffer.getValue().length, buffer);
             this.updateTextArea(bytesRead+"");
         } catch (IOException ex) {
+            System.out.println("[Catch] Exception: " + ex.getMessage());
             updateTextArea("Something wrong with reading");
         }
     }//GEN-LAST:event_jToggleButton2ActionPerformed
@@ -206,6 +209,7 @@ public class ClientGUI extends javax.swing.JFrame {
             client.fs_init();
             this.updateTextArea(client.getClientID().toString());
         } catch (Exception ex) {
+            System.out.println("[Catch] Exception: " + ex.getMessage());
             this.updateTextArea("Error");
         }
     }//GEN-LAST:event_jToggleButton1ActionPerformed

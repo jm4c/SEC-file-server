@@ -14,7 +14,7 @@ import utils.CryptoUtils;
     exceptions caught by the file system, and the returns of the operations 
     being performed by the server.
  */
-public class DemoReadFileByID {
+public class DemoReadFileByPKey {
 
     public static void main(String[] args) {
         try {
@@ -43,7 +43,7 @@ public class DemoReadFileByID {
             String s = "The quick brown fox jumps over the lazy dog";
             buffer.setValue(CryptoUtils.serialize(s));
             int size = buffer.getValue().length;
-            System.out.println("Writing some data of size " + size + "to the file, at pos 0 ...");
+            System.out.println("Writing some data of size " + size + " to the file, at pos 0 ...");
             c1.fs_write(0, size, buffer);
             String sent = printHexBinary(buffer.getValue());
             System.out.println("Done!");
@@ -63,7 +63,7 @@ public class DemoReadFileByID {
             
         } catch (Exception ex) {
             System.out.println("[Catch] Exception: " + ex.getMessage());
-            Logger.getLogger(DemoReadFileByID.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DemoReadFileByPKey.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }

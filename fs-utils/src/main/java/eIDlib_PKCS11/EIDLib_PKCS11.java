@@ -22,6 +22,7 @@ public class EIDLib_PKCS11 {
     // Initializes the EIDLib
     public static PKCS11 initLib() throws Exception {
 
+        System.out.println("    //Initializing the eID Lib ...");
         System.loadLibrary("pteidlibj");
         pteid.Init(""); // Initializes the eID Lib
         pteid.SetSODChecking(false); // Don't check the integrity of the ID, address and photo (!)
@@ -45,12 +46,15 @@ public class EIDLib_PKCS11 {
             Method getInstanceMethode = pkcs11Class.getDeclaredMethod("getInstance", new Class[]{String.class, String.class, CK_C_INITIALIZE_ARGS.class, boolean.class});
             pkcs11 = (PKCS11) getInstanceMethode.invoke(null, new Object[]{libName, "C_GetFunctionList", null, false});
         }
+        System.out.println("    //Done!\n");
+        
         return pkcs11;
     }
 
     // Begins a signing session. Asks for authentication
     public static long initSession(PKCS11 pkcs11) throws Exception {
         //Open the PKCS11 session
+        System.out.println("    //Opening a PKCS11 session...");
         long p11_session = pkcs11.C_OpenSession(0, PKCS11Constants.CKF_SERIAL_SESSION, null, null);
 
         // Token login 
@@ -75,13 +79,17 @@ public class EIDLib_PKCS11 {
         mechanism.pParameter = null;
         pkcs11.C_SignInit(p11_session, mechanism, signatureKey);
 
+        System.out.println("    //Done!\n");
         return p11_session;
     }
         
     // Closes the EIDLib. MUST be called after use
     public static void closeLib(PKCS11 pkcs11, long p11_session) throws Exception {
+        System.out.println("    //Closing the PKCS11 session ...");
+        System.out.println("    //Closing the eID Lib ...");
         pkcs11.C_CloseSession(p11_session);
         pteid.Exit(pteid.PTEID_EXIT_LEAVE_CARD);
+        System.out.println("    //Done!\n");
     }
 
     //Encodes the n-th certificate in ByteArray form, starting from 0

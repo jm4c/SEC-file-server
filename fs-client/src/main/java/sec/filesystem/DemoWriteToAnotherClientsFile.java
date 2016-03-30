@@ -1,5 +1,7 @@
 package sec.filesystem;
 
+import java.security.KeyPair;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static javax.xml.bind.DatatypeConverter.printHexBinary;
@@ -14,6 +16,9 @@ import utils.CryptoUtils;
     receives and processes the Demo Apps requests, for information on the 
     exceptions caught by the file system, and the returns of the operations 
     being performed by the server.
+
+    WARNING
+    This demo App currently does not work with smartcards.
  */
 public class DemoWriteToAnotherClientsFile {
 
@@ -22,8 +27,8 @@ public class DemoWriteToAnotherClientsFile {
             Library c1 = new Library();
             Library c2 = new Library();
             Buffer_t buffer = new Buffer_t(CryptoUtils.serialize(""));
-            
-            // Initializing the file system
+
+            // Initializing the file system for client 1
             System.out.println("CLIENT 1");
             System.out.println("Initializing the File System...");
             c1.fs_init();
@@ -31,14 +36,14 @@ public class DemoWriteToAnotherClientsFile {
             System.out.println("Client ID assigned by server: " + c1.getClientID().getValue());
             System.out.println("---------------------------------------------------------\n");
 
-            // Initializing the file system
+            // Initializing the file system for client 2
             System.out.println("CLIENT 2");
             System.out.println("Initializing the File System...");
             c2.fs_init();
             System.out.println("Done!");
             System.out.println("Client ID assigned by server: " + c2.getClientID().getValue());
             System.out.println("---------------------------------------------------------\n");
-            
+
             final String s = "The quick brown fox jumps over the lazy dog";
             buffer.setValue(CryptoUtils.serialize(s));
             // Writing to client 1's file, at position 0.
@@ -48,18 +53,24 @@ public class DemoWriteToAnotherClientsFile {
             System.out.println("Done!");
             System.out.println("Data sent to the file system:  " + printHexBinary(buffer.getValue()));
             System.out.println("---------------------------------------------------------\n");
-            
-            //Stealing client 1's ID
-            c2.setClientID(c1.getClientID());
-            
+
+            //Stealing client 1's Public Key
+            c2.setPublicKey(c1.getPublicKey());
+
             // Writing to client 1's file, as client 2.
             System.out.println("CLIENT 2");
             System.out.println("Writing some data of size " + buffer.getValue().length + " to client 1's file, as client 2 ...");
-            c2.fs_write(0, buffer.getValue().length, buffer);       
-            
+            c2.fs_write(0, buffer.getValue().length, buffer);
+
         } catch (Exception ex) {
             System.out.println("[Catch] Exception: " + ex.getMessage());
-            Logger.getLogger(DemoReadFileByID.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DemoReadFileByPKey.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    public static void promptEnterKey() {
+        System.out.println("Press \"ENTER\" to continue...");
+        Scanner scanner = new Scanner(System.in);
+        scanner.nextLine();
     }
 }

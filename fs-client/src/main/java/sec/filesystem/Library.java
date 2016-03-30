@@ -49,6 +49,10 @@ public class Library {
         this.privateKey = kp.getPrivate();
     }
 
+    protected void setPublicKey(Pk_t key) {
+        this.publicKey = key;
+    }
+       
     private void setPublicKey(KeyPair kp) {
         this.publicKey = new Pk_t(kp.getPublic());
     }
@@ -121,7 +125,7 @@ public class Library {
             setPrivateKey(kp);
             setPublicKey(kp);
         }
-
+        
         //current (empty) header file
         List<Id_t> emptyFileList = new ArrayList<>();
         Header_t header = new Header_t(emptyFileList);
@@ -140,6 +144,7 @@ public class Library {
 
         System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
         setClientID(server.put_k(headerData, signature, getPublicKey()));
+        server.storePubKey(this.getPublicKey());
 
         if (SMARTCARDSUPPORTED) {
             EIDLib_PKCS11.closeLib(pkcs11, p11_session);
@@ -199,7 +204,8 @@ public class Library {
             if (contents == null) {
                 throw new NullContentException("Content is null");
             }
-
+            
+                    
             System.out.println(this.getClientID().getValue());
             //Client's ID can only be a header file
             Data_t data = server.get(this.getClientID());
@@ -249,7 +255,9 @@ public class Library {
             }
 
             //uploads header first to check signature
-            if (!getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
+            if (getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
+                server.storePubKey(this.getPublicKey());
+            } else {
                 throw new IDMismatchException("Client's ID does not match main block ID!");
             }
 
@@ -295,7 +303,7 @@ public class Library {
 
     protected List fs_list() {
         try {
-            return server.getPKeyList();
+            return server.readPubKeys();
         } catch (Exception ex) {
             final String message = "Unable to retrieve Public Key list.";
             Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);
