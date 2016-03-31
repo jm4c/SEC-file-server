@@ -49,7 +49,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         return new Id_t(hash);
     }
 
-    private boolean pKeyAlreadyStored(List<Certificate> certList, PublicKey public_key) {
+    private boolean certAlreadyStored(List<Certificate> certList, PublicKey public_key) {
         boolean alreadyStored = false;
         for (Certificate cert : certList) {
             if (cert.getPublicKey().hashCode() == public_key.hashCode()) {
@@ -59,10 +59,20 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         return alreadyStored;
     }
 
+    private boolean pKeyAlreadyStored(List<Pk_t> pKeyList, PublicKey public_key) {
+        boolean alreadyStored = false;
+        for (Pk_t pkey : pKeyList) {
+            if (pkey.getValue().hashCode() == public_key.hashCode()) {
+                alreadyStored = true;
+            }
+        }
+        return alreadyStored;
+    }
+
     @Override
     public List readPubKeys() throws RemoteException {
         List<PublicKey> keyList = new ArrayList<>();
-        
+
         for (Certificate cert : certList) {
             keyList.add(cert.getPublicKey());
         }
@@ -141,10 +151,12 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
             Id_t id = calculateBlockID(public_key);
 
-            //check if publicKey is already stored
-            //TODO fix headerAlreadyExists always false
-            boolean headerAlreadyExists = pKeyAlreadyStored(certList, public_key.getValue());
-            System.out.println("already exists:" + headerAlreadyExists);
+            //check if publicKey is already stored           
+            boolean headerAlreadyExists = false;
+            PublicKey pKey = public_key.getValue();
+            if(certAlreadyStored(certList, pKey) || pKeyAlreadyStored(pKeyList, pKey))
+                headerAlreadyExists = true;
+            //System.out.println("[DEBUG]    //already exists: " + headerAlreadyExists);
 
             //check timestamp
             if (headerAlreadyExists) {
@@ -155,7 +167,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
                 if (!newTimestamp.after(oldTimestamp)) {
                     throw new WrongHeaderSequenceException("New header's timestamp is older than old header's timestamp");
                 }
-                
+
             }
 
             System.out.println(id.getValue());
