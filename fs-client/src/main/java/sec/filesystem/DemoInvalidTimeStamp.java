@@ -32,7 +32,7 @@ public class DemoInvalidTimeStamp {
             
             // Initializing the file system
             System.out.println("Initializing the File System (with a timestamp in the future...)");
-            c.setClientID(fs_init_fakeFutureTimestamp());
+            c.setClientID(fs_init_withForgedTimestamp());
             System.out.println("Done!");
             System.out.println("Client ID assigned by server: " + c.getClientID().getValue());
             System.out.println("---------------------------------------------------------\n");
@@ -54,7 +54,7 @@ public class DemoInvalidTimeStamp {
     }
 	
 	//fs_init where the headers timestamp is a year later, causing remaining fs_writes to throw a wrong header sequence exception
-    protected static Id_t fs_init_fakeFutureTimestamp() throws Exception {
+    protected static Id_t fs_init_withForgedTimestamp() throws Exception {
 
         PKCS11 pkcs11;
 		long p11_session;
@@ -65,7 +65,7 @@ public class DemoInvalidTimeStamp {
             pkcs11 = EIDLib_PKCS11.initLib();
             p11_session = EIDLib_PKCS11.initSession(pkcs11);
             X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
-            publicKey = new Pk_t(cert.getPublicKey());
+            c.setPublicKey(cert);
         } else {
             KeyPair kp = CryptoUtils.setKeyPair();
             c.setPrivateKey(kp);

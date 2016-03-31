@@ -141,7 +141,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     @Override
-    public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws RemoteException, InvalidSignatureException {
+    public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws RemoteException, InvalidSignatureException, WrongHeaderSequenceException {
 
         try {
             if (!CryptoUtils.verify(data.getValue(), public_key.getValue(), signature.getValue())) {
@@ -165,7 +165,10 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
                 System.out.println(oldTimestamp.toString());
                 System.out.println(newTimestamp.toString());
                 if (!newTimestamp.after(oldTimestamp)) {
-                    throw new WrongHeaderSequenceException("New header's timestamp is older than old header's timestamp");
+                    throw new WrongHeaderSequenceException("New header's timestamp:\n\t\t\t\t\t\t"
+                    		+ newTimestamp.toString()
+                    		+ "\n\t\t\t\t\t happens before than old header's timestamp:\n\t\t\t\t\t\t"
+                    		+ oldTimestamp.toString());
                 }
 
             }
@@ -184,9 +187,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             oos.close();
 
             return id;
-        } catch (InvalidSignatureException ise) {
-            ise.printStackTrace();
-            throw ise;
+        } catch (InvalidSignatureException | WrongHeaderSequenceException e) {
+            e.printStackTrace();
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
