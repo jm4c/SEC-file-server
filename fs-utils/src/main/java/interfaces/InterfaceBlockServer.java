@@ -4,6 +4,8 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.security.cert.Certificate;
 import java.util.List;
+
+import exceptions.RevokedCertificateException;
 import types.*;
 
 public interface InterfaceBlockServer extends Remote {
@@ -17,7 +19,7 @@ public interface InterfaceBlockServer extends Remote {
     
     public boolean storePubKey(Pk_t key) throws RemoteException;
     
-    public boolean storePubKey(Certificate cert) throws RemoteException;
+    public boolean storePubKey(Certificate cert) throws RemoteException, RevokedCertificateException;
     
     public Data_t get(Id_t id) throws RemoteException;
 

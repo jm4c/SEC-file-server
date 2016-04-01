@@ -3,6 +3,8 @@ package sec.filesystem;
 import blocks.PublicKeyBlock;
 import exceptions.IDMismatchException;
 import interfaces.InterfaceBlockServer;
+import sun.security.x509.CertificateX509Key;
+
 import java.io.*;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -14,12 +16,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import exceptions.InvalidSignatureException;
+import exceptions.RevokedCertificateException;
 import exceptions.WrongHeaderSequenceException;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+
 import types.*;
 import utils.HashUtils;
 import utils.CryptoUtils;
+import eIDlib_PKCS11.EIDLib_PKCS11;
 
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
@@ -83,7 +89,12 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     @Override
-    public boolean storePubKey(Certificate cert) throws RemoteException {
+    public boolean storePubKey(Certificate cert) throws RemoteException, RevokedCertificateException {
+    	if(!EIDLib_PKCS11.isCertificateValid((X509Certificate) cert)){
+    		certList.remove(cert);
+    		
+    		throw new RevokedCertificateException("Certificate has been revoked by its certification authority");
+    	};
         boolean certExists = certList.contains(cert);
         if (!certExists) {
             certList.add(cert);
@@ -156,14 +167,10 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             PublicKey pKey = public_key.getValue();
             if(certAlreadyStored(certList, pKey) || pKeyAlreadyStored(pKeyList, pKey))
                 headerAlreadyExists = true;
-            //System.out.println("[DEBUG]    //already exists: " + headerAlreadyExists);
-
-            //check timestamp
+            //check timestamp, in order to defend against replay attacks
             if (headerAlreadyExists) {
                 Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
                 Timestamp newTimestamp = ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
-                System.out.println(oldTimestamp.toString());
-                System.out.println(newTimestamp.toString());
                 if (!newTimestamp.after(oldTimestamp)) {
                     throw new WrongHeaderSequenceException("New header's timestamp:\n\t\t\t\t\t\t"
                     		+ newTimestamp.toString()
@@ -176,7 +183,6 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             System.out.println(id.getValue());
             PublicKeyBlock b = new PublicKeyBlock(data, signature, public_key);
 
-            //check timestamp
             String s = id.getValue();
             new File("./files/").mkdirs();
             FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");

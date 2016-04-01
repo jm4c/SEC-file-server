@@ -3,6 +3,7 @@ package sec.filesystem;
 import eIDlib_PKCS11.EIDLib_PKCS11;
 import exceptions.IDMismatchException;
 import exceptions.NullContentException;
+import exceptions.RevokedCertificateException;
 import interfaces.InterfaceBlockServer;
 import java.io.IOException;
 import java.rmi.registry.LocateRegistry;
@@ -147,7 +148,13 @@ public class Library {
         setClientID(server.put_k(headerData, signature, getPublicKey()));
 
         if (SMARTCARDSUPPORTED) {
+        	try{
             server.storePubKey(cert);
+        	}catch (RevokedCertificateException rce){
+        		
+        	}finally{
+        		
+        	}
             EIDLib_PKCS11.closeLib(pkcs11, p11_session);
         } else {
             server.storePubKey(getPublicKey());
