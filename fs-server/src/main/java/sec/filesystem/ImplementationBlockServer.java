@@ -3,7 +3,6 @@ package sec.filesystem;
 import blocks.PublicKeyBlock;
 import exceptions.IDMismatchException;
 import interfaces.InterfaceBlockServer;
-import sun.security.x509.CertificateX509Key;
 
 import java.io.*;
 import java.rmi.RemoteException;
@@ -90,11 +89,10 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
     @Override
     public boolean storePubKey(Certificate cert) throws RemoteException, RevokedCertificateException {
-    	if(!EIDLib_PKCS11.isCertificateValid((X509Certificate) cert)){
-    		certList.remove(cert);
-    		
-    		throw new RevokedCertificateException("Certificate has been revoked by its certification authority");
-    	};
+        if (!EIDLib_PKCS11.isCertificateValid((X509Certificate) cert)) {
+            certList.remove(cert);
+            throw new RevokedCertificateException("Certificate has been revoked by its certification authority");
+        };
         boolean certExists = certList.contains(cert);
         if (!certExists) {
             certList.add(cert);
@@ -114,114 +112,93 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     @Override
-    public Data_t get(Id_t id) throws RemoteException {
-        PublicKeyBlock b = null;
+    public Data_t get(Id_t id) throws FileNotFoundException, IOException, InvalidKeyException, InvalidSignatureException, NoSuchAlgorithmException, ClassNotFoundException, SignatureException, IDMismatchException {
+        PublicKeyBlock b;
         // Main/Header block
-        try {
-            String s = id.getValue();
-            FileInputStream fin = null;
-            fin = new FileInputStream("./files/" + s + ".dat");
-            ObjectInputStream ois = new ObjectInputStream(fin);
-            Object obj = ois.readObject();
-            if (obj instanceof PublicKeyBlock) {
-                System.out.println("\nGot header from:./files/" + s + ".dat");
-                b = (PublicKeyBlock) obj;
-                ois.close();
-                if (!verifyIntegrity(b)) {
-                    throw new InvalidSignatureException("Invalid signature.");
-                } else {
-                    System.out.println("Valid signature");
-                }
-                return b.getData();
-            } else {
-                System.out.println("Got content from:./files/" + s + ".dat");
-                Data_t data = (Data_t) obj;
-                ois.close();
-                String blockID = calculateBlockID(data).getValue();
-                if (s.compareTo(blockID) != 0) {
-                    throw new IDMismatchException("Content IDs are not the same.");
-                }
-                return data;
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    @Override
-    public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws RemoteException, InvalidSignatureException, WrongHeaderSequenceException {
-
-        try {
-            if (!CryptoUtils.verify(data.getValue(), public_key.getValue(), signature.getValue())) {
+        String s = id.getValue();
+        FileInputStream fin = null;
+        fin = new FileInputStream("./files/" + s + ".dat");
+        ObjectInputStream ois = new ObjectInputStream(fin);
+        Object obj = ois.readObject();
+        if (obj instanceof PublicKeyBlock) {
+            System.out.println("\nGot header from:./files/" + s + ".dat");
+            b = (PublicKeyBlock) obj;
+            ois.close();
+            if (!verifyIntegrity(b)) {
                 throw new InvalidSignatureException("Invalid signature.");
+            } else {
+                System.out.println("Valid signature");
             }
-            System.out.println("signature is valid");
-
-            Id_t id = calculateBlockID(public_key);
-
-            //check if publicKey is already stored           
-            boolean headerAlreadyExists = false;
-            PublicKey pKey = public_key.getValue();
-            if(certAlreadyStored(certList, pKey) || pKeyAlreadyStored(pKeyList, pKey))
-                headerAlreadyExists = true;
-            //check timestamp, in order to defend against replay attacks
-            if (headerAlreadyExists) {
-                Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
-                Timestamp newTimestamp = ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
-                if (!newTimestamp.after(oldTimestamp)) {
-                    throw new WrongHeaderSequenceException("New header's timestamp:\n\t\t\t\t\t\t"
-                    		+ newTimestamp.toString()
-                    		+ "\n\t\t\t\t\t happens before than old header's timestamp:\n\t\t\t\t\t\t"
-                    		+ oldTimestamp.toString());
-                }
-
+            return b.getData();
+        } else {
+            System.out.println("Got content from:./files/" + s + ".dat");
+            Data_t data = (Data_t) obj;
+            ois.close();
+            String blockID = calculateBlockID(data).getValue();
+            if (s.compareTo(blockID) != 0) {
+                throw new IDMismatchException("Content IDs are not the same.");
             }
-
-            System.out.println(id.getValue());
-            PublicKeyBlock b = new PublicKeyBlock(data, signature, public_key);
-
-            String s = id.getValue();
-            new File("./files/").mkdirs();
-            FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
-            System.out.println("Stored header in:./files/" + s + ".dat");
-
-            ObjectOutputStream oos = new ObjectOutputStream(fout);
-            oos.writeObject(b);
-            oos.close();
-
-            return id;
-        } catch (InvalidSignatureException | WrongHeaderSequenceException e) {
-            e.printStackTrace();
-            throw e;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+            return data;
         }
     }
 
     @Override
-    public Id_t put_h(Data_t data) throws RemoteException {
-        try {
-            Id_t id = calculateBlockID(data);
-            String s = id.getValue();
-            new File("./files/").mkdirs();
-            FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
-            System.out.println("Stored content in:./files/" + s + ".dat");
+    public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, InvalidSignatureException, IOException, ClassNotFoundException, IDMismatchException, WrongHeaderSequenceException {
 
-            ObjectOutputStream oos = new ObjectOutputStream(fout);
-            oos.writeObject(data);
-            oos.close();
+        if (!CryptoUtils.verify(data.getValue(), public_key.getValue(), signature.getValue())) {
+            throw new InvalidSignatureException("Invalid signature.");
+        }
+        System.out.println("signature is valid");
 
-            return id;
+        Id_t id = calculateBlockID(public_key);
 
-        } catch (NoSuchAlgorithmException | IOException e) {
-            e.printStackTrace();
-            return null;
+        //check if publicKey is already stored           
+        boolean headerAlreadyExists = false;
+        PublicKey pKey = public_key.getValue();
+        if (certAlreadyStored(certList, pKey) || pKeyAlreadyStored(pKeyList, pKey)) {
+            headerAlreadyExists = true;
+        }
+        //check timestamp, in order to defend against replay attacks
+        if (headerAlreadyExists) {
+            Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
+            Timestamp newTimestamp = ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
+            if (!newTimestamp.after(oldTimestamp)) {
+                throw new WrongHeaderSequenceException("\n\tNew header's timestamp: "
+                        + newTimestamp.toString()
+                        + "\n\tis older than previous header's timestamp: "
+                        + oldTimestamp.toString());
+            }
+
         }
 
+        System.out.println(id.getValue());
+        PublicKeyBlock b = new PublicKeyBlock(data, signature, public_key);
+
+        String s = id.getValue();
+        new File("./files/").mkdirs();
+        FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
+        System.out.println("Stored header in:./files/" + s + ".dat");
+
+        ObjectOutputStream oos = new ObjectOutputStream(fout);
+        oos.writeObject(b);
+        oos.close();
+
+        return id;
+    }
+
+    @Override
+    public Id_t put_h(Data_t data) throws NoSuchAlgorithmException, FileNotFoundException, IOException {
+        Id_t id = calculateBlockID(data);
+        String s = id.getValue();
+        new File("./files/").mkdirs();
+        FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
+        System.out.println("Stored content in:./files/" + s + ".dat");
+
+        ObjectOutputStream oos = new ObjectOutputStream(fout);
+        oos.writeObject(data);
+        oos.close();
+
+        return id;
     }
 
     @Override
@@ -230,15 +207,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     @Override
-    public Id_t getID(Pk_t pk) throws RemoteException {
+    public Id_t getID(Pk_t pk) throws RemoteException, NoSuchAlgorithmException, IOException {
         Id_t id;
-        try {
-            id = calculateBlockID(pk);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        id = calculateBlockID(pk);
         return id;
     }
-
 }

@@ -3,7 +3,6 @@ package sec.filesystem;
 import eIDlib_PKCS11.EIDLib_PKCS11;
 import exceptions.IDMismatchException;
 import exceptions.NullContentException;
-import exceptions.RevokedCertificateException;
 import interfaces.InterfaceBlockServer;
 import java.io.IOException;
 import java.rmi.registry.LocateRegistry;
@@ -15,8 +14,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import sun.security.pkcs11.wrapper.PKCS11;
 import types.*;
 import utils.CryptoUtils;
@@ -114,7 +111,6 @@ public class Library {
     }
 
     protected Id_t fs_init() throws Exception {
-
         X509Certificate cert;
 
         if (SMARTCARDSUPPORTED) {
@@ -148,13 +144,7 @@ public class Library {
         setClientID(server.put_k(headerData, signature, getPublicKey()));
 
         if (SMARTCARDSUPPORTED) {
-        	try{
             server.storePubKey(cert);
-        	}catch (RevokedCertificateException rce){
-        		
-        	}finally{
-        		
-        	}
             EIDLib_PKCS11.closeLib(pkcs11, p11_session);
         } else {
             server.storePubKey(getPublicKey());
@@ -162,38 +152,31 @@ public class Library {
         return getClientID();
     }
 
-    protected int fs_read(Pk_t pk, int pos, int size, Buffer_t contents) throws IOException {
-        try {
-            Id_t id = server.getID(pk);
-            Data_t data = server.get(id);
+    protected int fs_read(Pk_t pk, int pos, int size, Buffer_t contents) throws Exception {
+        Id_t id = server.getID(pk);
+        Data_t data = server.get(id);
 
-            @SuppressWarnings("unchecked")
-            List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
+        @SuppressWarnings("unchecked")
+        List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
 
-            byte[][] originalContentParts = new byte[originalFileList.size()][];
-            for (int i = 0; i < originalFileList.size(); i++) {
-                originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
-            }
-
-            //all stored data
-            Buffer_t src = joinContent(originalContentParts);
-
-            byte[] buff;
-            if (src.getValue().length < pos + size) {
-                buff = new byte[src.getValue().length - pos];
-            } else {
-                buff = new byte[size];
-            }
-
-            System.arraycopy(src.getValue(), pos, buff, 0, buff.length);
-            contents.setValue(buff);
-            return buff.length;
-
-        } catch (Exception ex) {
-            final String message = "Unable to furfill read request.";
-            Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);
-            return -1;
+        byte[][] originalContentParts = new byte[originalFileList.size()][];
+        for (int i = 0; i < originalFileList.size(); i++) {
+            originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
         }
+
+        //all stored data
+        Buffer_t src = joinContent(originalContentParts);
+
+        byte[] buff;
+        if (src.getValue().length < pos + size) {
+            buff = new byte[src.getValue().length - pos];
+        } else {
+            buff = new byte[size];
+        }
+
+        System.arraycopy(src.getValue(), pos, buff, 0, buff.length);
+        contents.setValue(buff);
+        return buff.length;
     }
 
     protected void fs_write(int pos, int size, Buffer_t contents) throws Exception {
@@ -207,118 +190,105 @@ public class Library {
         }
 
         System.out.println("\nNew FS write");
-
-        try {
-            if (contents == null) {
-                throw new NullContentException("Content is null");
-            }
-
-            System.out.println(this.getClientID().getValue());
-            //Client's ID can only be a header file
-            Data_t data = server.get(this.getClientID());
-
-            if (data == null) {
-                System.out.println("data is null");
-            }
-            //Header file's data is always a list of other files' IDs
-            @SuppressWarnings("unchecked")
-            List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
-
-            Buffer_t base;
-
-            if (originalFileList.isEmpty()) {
-                base = new Buffer_t(new byte[pos + size]);
-            } else {
-                byte[][] originalContentParts = new byte[originalFileList.size()][];
-                for (int i = 0; i < originalFileList.size(); i++) {
-                    originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
-                }
-                base = joinContent(originalContentParts);
-
-                //	puts old content into a bigger file
-                if (base.getValue().length < pos + size) {
-                    Buffer_t auxBase = new Buffer_t(new byte[pos + size]);
-                    System.arraycopy(base.getValue(), 0, auxBase.value, 0, size);
-                    base = auxBase;
-                }
-            }
-            System.arraycopy(contents.getValue(), 0, base.value, pos, size);
-
-            byte[][] filesArray = splitContent(base);
-
-            List<Id_t> newFileList = new ArrayList<>();
-            for (byte[] filesArray1 : filesArray) {
-                newFileList.add(new Id_t(HashUtils.hash(filesArray1, null)));
-            }
-
-            Header_t header = new Header_t(newFileList);
-
-            Data_t headerData = new Data_t(CryptoUtils.serialize(header));
-            Sig_t signature;
-            if (SMARTCARDSUPPORTED) {
-                signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
-            } else {
-                signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
-            }
-
-            //uploads header first to check signature
-            if (!getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
-                throw new IDMismatchException("Client's ID does not match main block ID!");
-            }
-
-            if (SMARTCARDSUPPORTED) {
-                server.storePubKey(cert);
-            } else {
-                server.storePubKey(getPublicKey());
-            }
-
-            //uploads contents
-            if (originalFileList.isEmpty()) {
-                System.out.println("Original it's empty");
-                for (int i = 0; i < newFileList.size(); i++) {
-                    System.out.println("new block! (" + i + ")");
-                    System.out.println(server.put_h(new Data_t(filesArray[i])).getValue());
-                }
-            } else {
-                boolean addBlockFlag = true;
-                for (int i = 0; i < newFileList.size(); i++) {
-                    addBlockFlag = true;
-                    System.out.println("\nNEW[" + i + "]:" + newFileList.get(i).getValue());
-
-                    for (int j = 0; j < originalFileList.size(); j++) {
-                        System.out.println("OLD[" + j + "]:" + originalFileList.get(j).getValue());
-                        if (originalFileList.get(j).equals(newFileList.get(i))) {
-                            addBlockFlag = false;
-                            break;
-                        }
-                    }
-
-                    if (addBlockFlag) {
-                        System.out.println("new block!");
-                        server.put_h(new Data_t(filesArray[i]));
-
-                    }
-
-                }
-            }
-            this.setFileList(newFileList);
-
-        } catch (Exception ex) {
-            final String message = "Unable to furfill write request.";
-            Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);
+        if (contents == null) {
+            throw new NullContentException("Content is null");
         }
+
+        System.out.println(this.getClientID().getValue());
+        //Client's ID can only be a header file
+        Data_t data = server.get(this.getClientID());
+
+        if (data == null) {
+            throw new NullContentException("data is null");
+        }
+        //Header file's data is always a list of other files' IDs
+        @SuppressWarnings("unchecked")
+        List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
+
+        Buffer_t base;
+
+        if (originalFileList.isEmpty()) {
+            base = new Buffer_t(new byte[pos + size]);
+        } else {
+            byte[][] originalContentParts = new byte[originalFileList.size()][];
+            for (int i = 0; i < originalFileList.size(); i++) {
+                originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
+            }
+            base = joinContent(originalContentParts);
+
+            //	puts old content into a bigger file
+            if (base.getValue().length < pos + size) {
+                Buffer_t auxBase = new Buffer_t(new byte[pos + size]);
+                System.arraycopy(base.getValue(), 0, auxBase.value, 0, size);
+                base = auxBase;
+            }
+        }
+        System.arraycopy(contents.getValue(), 0, base.value, pos, size);
+
+        byte[][] filesArray = splitContent(base);
+
+        List<Id_t> newFileList = new ArrayList<>();
+        for (byte[] filesArray1 : filesArray) {
+            newFileList.add(new Id_t(HashUtils.hash(filesArray1, null)));
+        }
+
+        Header_t header = new Header_t(newFileList);
+
+        Data_t headerData = new Data_t(CryptoUtils.serialize(header));
+        Sig_t signature;
+        if (SMARTCARDSUPPORTED) {
+            signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
+        } else {
+            signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
+        }
+
+        //uploads header first to check signature
+        if (!getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
+            throw new IDMismatchException("Client's ID does not match main block ID!");
+        }
+
+        if (SMARTCARDSUPPORTED) {
+            server.storePubKey(cert);
+        } else {
+            server.storePubKey(getPublicKey());
+        }
+
+        //uploads contents
+        if (originalFileList.isEmpty()) {
+            System.out.println("Original it's empty");
+            for (int i = 0; i < newFileList.size(); i++) {
+                System.out.println("new block! (" + i + ")");
+                System.out.println(server.put_h(new Data_t(filesArray[i])).getValue());
+            }
+        } else {
+            boolean addBlockFlag = true;
+            for (int i = 0; i < newFileList.size(); i++) {
+                addBlockFlag = true;
+                System.out.println("\nNEW[" + i + "]:" + newFileList.get(i).getValue());
+
+                for (int j = 0; j < originalFileList.size(); j++) {
+                    System.out.println("OLD[" + j + "]:" + originalFileList.get(j).getValue());
+                    if (originalFileList.get(j).equals(newFileList.get(i))) {
+                        addBlockFlag = false;
+                        break;
+                    }
+                }
+
+                if (addBlockFlag) {
+                    System.out.println("new block!");
+                    server.put_h(new Data_t(filesArray[i]));
+
+                }
+            }
+        }
+        this.setFileList(newFileList);
+
         if (SMARTCARDSUPPORTED) {
             EIDLib_PKCS11.closeLib(pkcs11, p11_session);
         }
     }
 
-    protected List fs_list() {
-        try {
-            return server.readPubKeys();
-        } catch (Exception ex) {
-            final String message = "Unable to retrieve Public Key list.";
-            Logger.getLogger(Library.class.getName()).log(Level.SEVERE, message, ex);
-            return null;
-        }
+    protected List fs_list() throws Exception {
+        return server.readPubKeys();
     }
 }

@@ -198,9 +198,9 @@ public class ClientGUI extends javax.swing.JFrame {
         try {
             int bytesRead = client.fs_read(client.getPublicKey(), pos, buffer.getValue().length, buffer);
             this.updateTextArea(bytesRead+"");
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             System.out.println("[Catch] Exception: " + ex.getMessage());
-            updateTextArea("Something wrong with reading");
+            Logger.getLogger(DemoReadFileByPKey.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_jToggleButton2ActionPerformed
 
@@ -210,7 +210,7 @@ public class ClientGUI extends javax.swing.JFrame {
             this.updateTextArea(client.getClientID().toString());
         } catch (Exception ex) {
             System.out.println("[Catch] Exception: " + ex.getMessage());
-            this.updateTextArea("Error");
+            Logger.getLogger(DemoReadFileByPKey.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_jToggleButton1ActionPerformed
 
@@ -238,15 +238,10 @@ public class ClientGUI extends javax.swing.JFrame {
                     break;
                 }
             }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(ClientGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(ClientGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(ClientGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(ClientGUI.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
+        } catch (Exception ex) {
+            System.out.println("[Catch] Exception: " + ex.getMessage());
+            Logger.getLogger(DemoReadFileByPKey.class.getName()).log(Level.SEVERE, null, ex);
+        } 
         //</editor-fold>
 
         /* Create and display the form */
