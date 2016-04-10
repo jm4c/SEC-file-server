@@ -1,17 +1,16 @@
 package interfaces;
 
 import java.rmi.Remote;
-import java.rmi.RemoteException;
 import java.security.cert.Certificate;
 import java.util.List;
 
-import exceptions.RevokedCertificateException;
 import types.*;
 
 public interface InterfaceBlockServer extends Remote {
 	
     public static final int BLOCK_MAX_SIZE = 4*1024; //4kB
-
+    public static final int REPLICAS = 3; //Number of Server Replicas
+    
     //Temporary greeting method for testing
     public String greeting() throws Exception;
     

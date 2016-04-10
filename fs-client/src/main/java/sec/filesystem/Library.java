@@ -5,6 +5,7 @@ import exceptions.IDMismatchException;
 import exceptions.NullContentException;
 import interfaces.InterfaceBlockServer;
 import java.io.IOException;
+import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.KeyPair;
@@ -21,7 +22,7 @@ import utils.HashUtils;
 
 public class Library {
 
-    protected static final boolean SMARTCARDSUPPORTED = true;
+    protected static final boolean SMARTCARDSUPPORTED = false;
 
     private PrivateKey privateKey;
     private Pk_t publicKey;
@@ -136,46 +137,69 @@ public class Library {
             signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
         }
 
-        Registry myReg = LocateRegistry.getRegistry("localhost");
-        server = (InterfaceBlockServer) myReg.lookup("fs.Server");
-        System.out.println(server.greeting() + "\n");
+        //REPLICA CODE BLOCK
+        for (int i = 0; i < InterfaceBlockServer.REPLICAS; i++) {
+            Registry myReg = LocateRegistry.getRegistry("localhost");
+            System.out.println("Contacting server-" + i);
+            try {
+                server = (InterfaceBlockServer) myReg.lookup("fs.server-" + i);
+            } catch (NotBoundException rme) {
+                System.out.println("server-" + i + " is unresponsive...");
+                continue;
+            }
+            //ENDOF REPLICA CODE BLOCK
 
-        System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
-        setClientID(server.put_k(headerData, signature, getPublicKey()));
+            System.out.println(server.greeting() + "\n");
+            System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
+            setClientID(server.put_k(headerData, signature, getPublicKey()));
 
-        if (SMARTCARDSUPPORTED) {
-            server.storePubKey(cert);
-            EIDLib_PKCS11.closeLib(pkcs11, p11_session);
-        } else {
-            server.storePubKey(getPublicKey());
+            if (SMARTCARDSUPPORTED) {
+                server.storePubKey(cert);
+                EIDLib_PKCS11.closeLib(pkcs11, p11_session);
+            } else {
+                server.storePubKey(getPublicKey());
+            }
         }
         return getClientID();
     }
 
     protected int fs_read(Pk_t pk, int pos, int size, Buffer_t contents) throws Exception {
-        Id_t id = server.getID(pk);
-        Data_t data = server.get(id);
+        byte[] buff = new byte[0];
+//REPLICA CODE BLOCK
+        for (int i = 0; i < InterfaceBlockServer.REPLICAS; i++) {
+            Registry myReg = LocateRegistry.getRegistry("localhost");
+            System.out.println("Contacting server-" + i);
+            try {
+                server = (InterfaceBlockServer) myReg.lookup("fs.server-" + i);
+            } catch (NotBoundException rme) {
+                System.out.println("server-" + i + " is unresponsive...");
+                continue;
+            }
+//ENDOF REPLICA CODE BLOCK
 
-        @SuppressWarnings("unchecked")
-        List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
+            Id_t id = server.getID(pk);
+            Data_t data = server.get(id);
 
-        byte[][] originalContentParts = new byte[originalFileList.size()][];
-        for (int i = 0; i < originalFileList.size(); i++) {
-            originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
+            @SuppressWarnings("unchecked")
+            List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
+
+            byte[][] originalContentParts = new byte[originalFileList.size()][];
+            for (int j = 0; j < originalFileList.size(); j++) {
+                originalContentParts[j] = server.get(originalFileList.get(j)).getValue();
+            }
+
+            //all stored data
+            Buffer_t src = joinContent(originalContentParts);
+
+            if (src.getValue().length < pos + size) {
+                buff = new byte[src.getValue().length - pos];
+            } else {
+                buff = new byte[size];
+            }
+
+            System.arraycopy(src.getValue(), pos, buff, 0, buff.length);
+            contents.setValue(buff);
         }
-
-        //all stored data
-        Buffer_t src = joinContent(originalContentParts);
-
-        byte[] buff;
-        if (src.getValue().length < pos + size) {
-            buff = new byte[src.getValue().length - pos];
-        } else {
-            buff = new byte[size];
-        }
-
-        System.arraycopy(src.getValue(), pos, buff, 0, buff.length);
-        contents.setValue(buff);
         return buff.length;
     }
 
@@ -195,100 +219,128 @@ public class Library {
         }
 
         System.out.println(this.getClientID().getValue());
-        //Client's ID can only be a header file
-        Data_t data = server.get(this.getClientID());
 
-        if (data == null) {
-            throw new NullContentException("data is null");
-        }
-        //Header file's data is always a list of other files' IDs
-        @SuppressWarnings("unchecked")
-        List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
-
-        Buffer_t base;
-
-        if (originalFileList.isEmpty()) {
-            base = new Buffer_t(new byte[pos + size]);
-        } else {
-            byte[][] originalContentParts = new byte[originalFileList.size()][];
-            for (int i = 0; i < originalFileList.size(); i++) {
-                originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
+        //REPLICA CODE BLOCK
+        for (int k = 0; k < InterfaceBlockServer.REPLICAS; k++) {
+            Registry myReg = LocateRegistry.getRegistry("localhost");
+            System.out.println("Contacting server-" + k);
+            try {
+                server = (InterfaceBlockServer) myReg.lookup("fs.server-" + k);
+            } catch (NotBoundException rme) {
+                System.out.println("server-" + k + " is unresponsive...");
+                continue;
             }
-            base = joinContent(originalContentParts);
+//ENDOF REPLICA CODE BLOCK    
 
-            //	puts old content into a bigger file
-            if (base.getValue().length < pos + size) {
-                Buffer_t auxBase = new Buffer_t(new byte[pos + size]);
-                System.arraycopy(base.getValue(), 0, auxBase.value, 0, size);
-                base = auxBase;
+            //Client's ID can only be a header file
+            Data_t data = server.get(this.getClientID());
+
+            if (data == null) {
+                throw new NullContentException("data is null");
             }
-        }
-        System.arraycopy(contents.getValue(), 0, base.value, pos, size);
+            //Header file's data is always a list of other files' IDs
+            @SuppressWarnings("unchecked")
+            List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
 
-        byte[][] filesArray = splitContent(base);
+            Buffer_t base;
 
-        List<Id_t> newFileList = new ArrayList<>();
-        for (byte[] filesArray1 : filesArray) {
-            newFileList.add(new Id_t(HashUtils.hash(filesArray1, null)));
-        }
+            if (originalFileList.isEmpty()) {
+                base = new Buffer_t(new byte[pos + size]);
+            } else {
+                byte[][] originalContentParts = new byte[originalFileList.size()][];
+                for (int i = 0; i < originalFileList.size(); i++) {
+                    originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
+                }
+                base = joinContent(originalContentParts);
 
-        Header_t header = new Header_t(newFileList);
-
-        Data_t headerData = new Data_t(CryptoUtils.serialize(header));
-        Sig_t signature;
-        if (SMARTCARDSUPPORTED) {
-            signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
-        } else {
-            signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
-        }
-
-        //uploads header first to check signature
-        if (!getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
-            throw new IDMismatchException("Client's ID does not match main block ID!");
-        }
-
-        if (SMARTCARDSUPPORTED) {
-            server.storePubKey(cert);
-        } else {
-            server.storePubKey(getPublicKey());
-        }
-
-        //uploads contents
-        if (originalFileList.isEmpty()) {
-            System.out.println("Original it's empty");
-            for (int i = 0; i < newFileList.size(); i++) {
-                System.out.println("new block! (" + i + ")");
-                System.out.println(server.put_h(new Data_t(filesArray[i])).getValue());
+                //	puts old content into a bigger file
+                if (base.getValue().length < pos + size) {
+                    Buffer_t auxBase = new Buffer_t(new byte[pos + size]);
+                    System.arraycopy(base.getValue(), 0, auxBase.value, 0, size);
+                    base = auxBase;
+                }
             }
-        } else {
-            boolean addBlockFlag = true;
-            for (int i = 0; i < newFileList.size(); i++) {
-                addBlockFlag = true;
-                System.out.println("\nNEW[" + i + "]:" + newFileList.get(i).getValue());
+            System.arraycopy(contents.getValue(), 0, base.value, pos, size);
 
-                for (int j = 0; j < originalFileList.size(); j++) {
-                    System.out.println("OLD[" + j + "]:" + originalFileList.get(j).getValue());
-                    if (originalFileList.get(j).equals(newFileList.get(i))) {
-                        addBlockFlag = false;
-                        break;
+            byte[][] filesArray = splitContent(base);
+
+            List<Id_t> newFileList = new ArrayList<>();
+            for (byte[] filesArray1 : filesArray) {
+                newFileList.add(new Id_t(HashUtils.hash(filesArray1, null)));
+            }
+
+            Header_t header = new Header_t(newFileList);
+
+            Data_t headerData = new Data_t(CryptoUtils.serialize(header));
+            Sig_t signature;
+            if (SMARTCARDSUPPORTED) {
+                signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
+            } else {
+                signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
+            }
+
+            //uploads header first to check signature
+            if (!getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
+                throw new IDMismatchException("Client's ID does not match main block ID!");
+            }
+
+            if (SMARTCARDSUPPORTED) {
+                server.storePubKey(cert);
+            } else {
+                server.storePubKey(getPublicKey());
+            }
+
+            //uploads contents
+            if (originalFileList.isEmpty()) {
+                System.out.println("Original it's empty");
+                for (int i = 0; i < newFileList.size(); i++) {
+                    System.out.println("new block! (" + i + ")");
+                    System.out.println(server.put_h(new Data_t(filesArray[i])).getValue());
+                }
+            } else {
+                boolean addBlockFlag = true;
+                for (int i = 0; i < newFileList.size(); i++) {
+                    addBlockFlag = true;
+                    System.out.println("\nNEW[" + i + "]:" + newFileList.get(i).getValue());
+
+                    for (int j = 0; j < originalFileList.size(); j++) {
+                        System.out.println("OLD[" + j + "]:" + originalFileList.get(j).getValue());
+                        if (originalFileList.get(j).equals(newFileList.get(i))) {
+                            addBlockFlag = false;
+                            break;
+                        }
+                    }
+
+                    if (addBlockFlag) {
+                        System.out.println("new block!");
+                        server.put_h(new Data_t(filesArray[i]));
+
                     }
                 }
-
-                if (addBlockFlag) {
-                    System.out.println("new block!");
-                    server.put_h(new Data_t(filesArray[i]));
-
-                }
             }
-        }
-        this.setFileList(newFileList);
+            this.setFileList(newFileList);
 
-        if (SMARTCARDSUPPORTED) {
-            EIDLib_PKCS11.closeLib(pkcs11, p11_session);
+            if (SMARTCARDSUPPORTED) {
+                EIDLib_PKCS11.closeLib(pkcs11, p11_session);
+            }
         }
     }
 
     protected List fs_list() throws Exception {
-        return server.readPubKeys();
+        List keyList = new ArrayList<>();
+//REPLICA CODE BLOCK
+        for (int k = 0; k < InterfaceBlockServer.REPLICAS; k++) {
+            Registry myReg = LocateRegistry.getRegistry("localhost");
+            System.out.println("Contacting server-" + k);
+            try {
+                server = (InterfaceBlockServer) myReg.lookup("fs.server-" + k);
+            } catch (NotBoundException rme) {
+                System.out.println("server-" + k + " is unresponsive...");
+                continue;
+            }
+//ENDOF REPLICA CODE BLOCK 
+            keyList = server.readPubKeys();
+        }
+        return keyList;
     }
 }
