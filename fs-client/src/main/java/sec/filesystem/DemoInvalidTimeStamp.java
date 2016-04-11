@@ -1,5 +1,6 @@
 package sec.filesystem;
 
+import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.security.KeyPair;
@@ -60,6 +61,9 @@ public class DemoInvalidTimeStamp {
 		long p11_session;
 		PrivateKey privateKey;
 		Pk_t publicKey;
+		InterfaceBlockServer server;
+		Id_t id = null;
+		
 		
 		if (Library.SMARTCARDSUPPORTED) {
             pkcs11 = EIDLib_PKCS11.initLib();
@@ -92,16 +96,26 @@ public class DemoInvalidTimeStamp {
             signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), privateKey));
         }
 
-        Registry myReg = LocateRegistry.getRegistry("localhost");
-        Library.server = (InterfaceBlockServer) myReg.lookup("fs.Server");
-        System.out.println(Library.server.greeting() + "\n");
+      //REPLICA CODE BLOCK
+        for (int i = 0; i < InterfaceBlockServer.REPLICAS; i++) {
+            Registry myReg = LocateRegistry.getRegistry("localhost");
+            System.out.println("Contacting server-" + i);
+            try {
+                server = (InterfaceBlockServer) myReg.lookup("fs.server-" + i);
+            } catch (NotBoundException rme) {
+                System.out.println("server-" + i + " is unresponsive...");
+                continue;
+            }
+            //ENDOF REPLICA CODE BLOCK
+            System.out.println(server.greeting() + "\n");
 
         System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
-        Id_t id = Library.server.put_k(headerData, signature, c.getPublicKey());
-        Library.server.storePubKey(c.getPublicKey());
+        id = server.put_k(headerData, signature, c.getPublicKey());
+        server.storePubKey(c.getPublicKey());
 
         if (Library.SMARTCARDSUPPORTED) {
             EIDLib_PKCS11.closeLib(pkcs11, p11_session);
+        }
         }
         return id;
     }
