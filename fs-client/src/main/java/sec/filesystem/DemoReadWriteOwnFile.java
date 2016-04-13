@@ -1,5 +1,7 @@
 package sec.filesystem;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static javax.xml.bind.DatatypeConverter.printHexBinary;
@@ -16,51 +18,81 @@ import utils.CryptoUtils;
  */
 public class DemoReadWriteOwnFile {
 
+    static PrintStream originalStream = System.out;
+    static PrintStream dummyStream = new PrintStream(new OutputStream() {
+        public void write(int b) {
+            //NO-OP
+        }
+    });
+
+    private static void supressOutStream(String[] in) {
+        if (in.length > 0) {
+            if (in[0].equalsIgnoreCase("-less")) {
+                System.setOut(dummyStream);
+            }
+        }
+
+    }
+    private static void enableOutStream(String[] in) {  
+        if (in.length > 0) {
+            if (in[0].equalsIgnoreCase("-less")) {
+                System.setOut(originalStream);
+            }
+        }
+    }
+
     public static void main(String[] args) {
         try {
             Library c = new Library();
             Buffer_t buffer = new Buffer_t(CryptoUtils.serialize(""));
-            
+
             // Initializing the file system
-            System.out.println("Initializing the File System...");
+            System.out.println("//\t[1] Initializing the File System ...");
+            supressOutStream(args);
             c.setClientID(c.fs_init());
-            System.out.println("Done!");
-            System.out.println("Client ID assigned by server: " + c.getClientID().getValue());
+            enableOutStream(args);
+            System.out.println("//\t[2] File System has been initialized sucessfully.");
+            System.out.println("//\t[2] Client ID assigned by the server:\n\t" + c.getClientID().getValue());
             System.out.println("---------------------------------------------------------\n");
-            
+
             // Writing to the file at position 0
+            supressOutStream(args);
             String s = "The quick brown fox jumps over the lazy dog";
             buffer.setValue(CryptoUtils.serialize(s));
-            System.out.println("Writing some data of size " + buffer.getValue().length + " to the file, at pos 0 ...");
+            enableOutStream(args);
+            System.out.println("//\t[3] Performing a write request ...");
+            System.out.println("//\t[3] Writing some data of size " + buffer.getValue().length + " to the file, at pos 0 ...");
+            supressOutStream(args);
             c.fs_write(0, buffer.getValue().length, buffer);
             String sent = printHexBinary(buffer.getValue());
-            System.out.println("Done!");
-            System.out.println("Data sent to the file system:  " + sent);
-            System.out.println("---------------------------------------------------------\n"); 
-            
+            enableOutStream(args);
+            System.out.println("//\t[4] Write request has been performed successfully.");
+            System.out.println("//\t[4] Data sent to the file system:\n\t" + sent);
+            System.out.println("---------------------------------------------------------\n");
+
             // Reading all the data that was just written to the file
-            System.out.println("Reading the data that was just written to the file...");
+            System.out.println("//\t[5] Performing a read request ...");
+            System.out.println("//\t[5] Reading the data that was just written to the file ...");
+            supressOutStream(args);
             int bytesRead = c.fs_read(c.getPublicKey(), 0, buffer.getValue().length, buffer);
             String received = printHexBinary(buffer.getValue());
-            System.out.println("Done!");
-            System.out.println("Number of bytes that were read: " + bytesRead);
-            System.out.println("Data read from the file:  " + received);
-            System.out.println("---------------------------------------------------------\n");            
-            
-            // Comparing the output of read and write
-            System.out.println("Comparing the data sent with the data received...");
-            System.out.println("String.compareTo(sent,received) returns:" + sent.compareTo(received));
-            System.out.println("---------------------------------------------------------\n");            
-            
-            // Closing the file system
-            System.out.println("Closing the File System...");
-            //c.fs_close();
-            System.out.println("Done!");
+            enableOutStream(args);
+            System.out.println("//\t[6] Read request has been performed successfully.");
+            System.out.println("//\t[6] Number of bytes that were read\n\t" + bytesRead);
+            System.out.println("//\t[6] Data read from the file:\n\t" + received);
             System.out.println("---------------------------------------------------------\n");
-            
+
+            // Comparing the output of read and write
+            System.out.println("//\t[7] Comparing the data sent with the data received...");
+            System.out.println("//\t[7] String.compareTo(sent,received) returns:\n\t" + sent.compareTo(received));
+            System.out.println("---------------------------------------------------------\n");
+            System.out.println("//\t[ ] DemoApp has terminated.");
+
         } catch (Exception ex) {
-            System.out.println("[Catch] Exception: " + ex.getMessage());
+            enableOutStream(args);
+            System.out.println("//\t[ ] [Catch] Exception:\n\t" + ex.getMessage());
             Logger.getLogger(DemoReadWriteOwnFile.class.getName()).log(Level.SEVERE, null, ex);
+            System.exit(-1);
         }
     }
 }

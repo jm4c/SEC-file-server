@@ -22,7 +22,7 @@ import utils.HashUtils;
 
 public class Library {
 
-    protected static final boolean SMARTCARDSUPPORTED = true;
+    protected static final boolean SMARTCARDSUPPORTED = false;
 
     private PrivateKey privateKey;
     private Pk_t publicKey;
