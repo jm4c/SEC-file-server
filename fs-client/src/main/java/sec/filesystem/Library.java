@@ -15,6 +15,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import pteidlib.PteidException;
 import sun.security.pkcs11.wrapper.PKCS11;
 import types.*;
 import utils.CryptoUtils;
@@ -22,7 +23,7 @@ import utils.HashUtils;
 
 public class Library {
 
-    protected static final boolean SMARTCARDSUPPORTED = false;
+    private boolean smartcardSupport = true;
 
     private PrivateKey privateKey;
     private Pk_t publicKey;
@@ -37,6 +38,14 @@ public class Library {
 
     protected Library() {
 
+    }
+
+    public void setSmartcardSupport(boolean b) {
+        smartcardSupport = b;
+    }
+
+    public boolean isSmartcardSupported() {
+        return smartcardSupport;
     }
 
     protected void setClientID(Id_t headerID) throws NoSuchAlgorithmException, IOException {
@@ -112,14 +121,17 @@ public class Library {
     }
 
     protected Id_t fs_init() throws Exception {
-        X509Certificate cert;
+        X509Certificate cert = null;
 
-        if (SMARTCARDSUPPORTED) {
+        try {
             pkcs11 = EIDLib_PKCS11.initLib();
             p11_session = EIDLib_PKCS11.initSession(pkcs11);
             cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
             setPublicKey(cert);
-        } else {
+        } catch (PteidException ex) {
+            System.out.println("[Catch] Exception:\n\t" + ex.getMessage());
+            System.out.println("\tReverting to non-smartcard mode.\n");
+            setSmartcardSupport(false);
             KeyPair kp = CryptoUtils.setKeyPair();
             setPrivateKey(kp);
             setPublicKey(kp);
@@ -131,7 +143,7 @@ public class Library {
         Data_t headerData = new Data_t(CryptoUtils.serialize(header));
 
         Sig_t signature;
-        if (SMARTCARDSUPPORTED) {
+        if (isSmartcardSupported()) {
             signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
         } else {
             signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
@@ -153,7 +165,7 @@ public class Library {
             System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
             setClientID(server.put_k(headerData, signature, getPublicKey()));
 
-            if (SMARTCARDSUPPORTED) {
+            if (isSmartcardSupported()) {
                 server.storePubKey(cert);
                 EIDLib_PKCS11.closeLib(pkcs11, p11_session);
             } else {
@@ -204,9 +216,9 @@ public class Library {
     }
 
     protected void fs_write(int pos, int size, Buffer_t contents) throws Exception {
-        X509Certificate cert;
+        X509Certificate cert = null;
 
-        if (SMARTCARDSUPPORTED) {
+        if (isSmartcardSupported()) {
             pkcs11 = EIDLib_PKCS11.initLib();
             p11_session = EIDLib_PKCS11.initSession(pkcs11);
             cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
@@ -273,7 +285,7 @@ public class Library {
 
             Data_t headerData = new Data_t(CryptoUtils.serialize(header));
             Sig_t signature;
-            if (SMARTCARDSUPPORTED) {
+            if (isSmartcardSupported()) {
                 signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
             } else {
                 signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
@@ -284,7 +296,7 @@ public class Library {
                 throw new IDMismatchException("Client's ID does not match main block ID!");
             }
 
-            if (SMARTCARDSUPPORTED) {
+            if (isSmartcardSupported()) {
                 server.storePubKey(cert);
             } else {
                 server.storePubKey(getPublicKey());
@@ -320,7 +332,7 @@ public class Library {
             }
             this.setFileList(newFileList);
 
-            if (SMARTCARDSUPPORTED) {
+            if (isSmartcardSupported()) {
                 EIDLib_PKCS11.closeLib(pkcs11, p11_session);
             }
         }

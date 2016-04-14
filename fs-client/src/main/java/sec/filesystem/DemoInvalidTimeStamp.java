@@ -17,6 +17,7 @@ import exceptions.WrongHeaderSequenceException;
 import interfaces.InterfaceBlockServer;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import pteidlib.PteidException;
 import sun.security.pkcs11.wrapper.PKCS11;
 import types.Buffer_t;
 import types.Data_t;
@@ -92,7 +93,7 @@ public class DemoInvalidTimeStamp {
             swapOutStream("enable", args);
             System.out.println("// [ ] DemoApp has INCORRECTLY terminated.");
             System.exit(-1);
-            
+
         } catch (WrongHeaderSequenceException ex) {
             swapOutStream("enable", args);
             System.out.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
@@ -120,19 +121,22 @@ public class DemoInvalidTimeStamp {
     //fs_init where the headers timestamp is a year later, causing remaining fs_writes to throw a wrong header sequence exception
     protected static Id_t fs_init_withForgedTimestamp() throws Exception {
 
-        PKCS11 pkcs11;
-        long p11_session;
-        PrivateKey privateKey;
-        Pk_t publicKey;
+        PKCS11 pkcs11 = null;
+        long p11_session = 0L;
+        PrivateKey privateKey = null;
         InterfaceBlockServer server;
         Id_t id = null;
+        X509Certificate cert = null;
 
-        if (Library.SMARTCARDSUPPORTED) {
+        try {
             pkcs11 = EIDLib_PKCS11.initLib();
             p11_session = EIDLib_PKCS11.initSession(pkcs11);
-            X509Certificate cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
+            cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
             c.setPublicKey(cert);
-        } else {
+        } catch (PteidException ex) {
+            System.out.println("[Catch] Exception:\n\t" + ex.getMessage());
+            System.out.println("\tReverting to non-smartcard mode.\n");
+            c.setSmartcardSupport(false);
             KeyPair kp = CryptoUtils.setKeyPair();
             c.setPrivateKey(kp);
             c.setPublicKey(kp);
@@ -150,7 +154,7 @@ public class DemoInvalidTimeStamp {
         Data_t headerData = new Data_t(CryptoUtils.serialize(header));
 
         Sig_t signature;
-        if (Library.SMARTCARDSUPPORTED) {
+        if (c.isSmartcardSupported()) {
             signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
         } else {
             signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), privateKey));
@@ -173,7 +177,7 @@ public class DemoInvalidTimeStamp {
             id = server.put_k(headerData, signature, c.getPublicKey());
             server.storePubKey(c.getPublicKey());
 
-            if (Library.SMARTCARDSUPPORTED) {
+            if (c.isSmartcardSupported()) {
                 EIDLib_PKCS11.closeLib(pkcs11, p11_session);
             }
         }
