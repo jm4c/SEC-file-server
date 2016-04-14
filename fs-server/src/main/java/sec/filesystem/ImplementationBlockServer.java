@@ -163,9 +163,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
             Timestamp newTimestamp = ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
             if (!newTimestamp.after(oldTimestamp)) {
-                throw new WrongHeaderSequenceException("\n\tNew header's timestamp: "
-                        + newTimestamp.toString()
-                        + "\n\tis older than previous header's timestamp: "
+                throw new WrongHeaderSequenceException("New header's timestamp: "
+                        + newTimestamp.toString() + "\n"
+                        + "\tis older than previous header's timestamp: "
                         + oldTimestamp.toString());
             }
 

@@ -15,7 +15,8 @@ import types.Id_t;
 import utils.CryptoUtils;
 
 /*  Demo Class used for demonstrating a client connecting to the File Server, 
-    and issuing a list command for the Public Key list.
+    and issuing read request for content that the file system is unable to 
+    locate.
 
     Supported runtime arguments:
         -more       Shows more detailed information during runtime.
@@ -72,9 +73,9 @@ public class DemoReadMissingContent {
             int size = buffer.getValue().length;
             swapOutStream("enable", args);
             System.out.println("// [3] Performing a write request ...");
-            System.out.println("// [3] Writing some data of size " + buffer.getValue().length + " to the file, at pos 0 ...");
+            System.out.println("// [3] Writing some data of size " + size + " to the file, at pos 0 ...");
             swapOutStream("disable", args);
-            c.fs_write(0, buffer.getValue().length, buffer);
+            c.fs_write(0, size, buffer);
             String sent = printHexBinary(buffer.getValue());
             swapOutStream("enable", args);
             System.out.println("// [4] Write request has been performed successfully.");
