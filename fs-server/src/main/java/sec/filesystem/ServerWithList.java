@@ -34,7 +34,6 @@ public class ServerWithList {
 
             //  If serverList doesn't exist, create an empty list and store it
             if (!new File(SERVERLISTPATH).isFile()) {
-                // If it doesn't, 
                 File f = new File(SERVERLISTPATH);
                 f.getParentFile().mkdirs();
                 f.createNewFile();
