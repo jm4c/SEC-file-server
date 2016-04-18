@@ -4,22 +4,27 @@ import java.net.InetAddress;
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 
-public class Server0 {
+public class Server {
 
-    private static final String SERVERNAME = "server-0";
     private static final int PORT = 1099;
 
     public static void main(String[] args) {
+        String thisAddress;
+        String servername = "server-0";
         try {
-            String thisAddress;
             thisAddress = (InetAddress.getLocalHost()).toString();
             System.out.println("IP Address:" + thisAddress + " ---- Port: " + PORT);
-            LocateRegistry.createRegistry(PORT);
+            if (args.length > 0) {
+                servername = args[0];
+            }
+            if (servername.equalsIgnoreCase("server-0")) {
+                LocateRegistry.createRegistry(PORT);
+            }
             ImplementationBlockServer obj = new ImplementationBlockServer();
-            Naming.rebind("fs." + SERVERNAME, obj);
-            System.out.println("FileSystem." + SERVERNAME + " is ready...");
+            Naming.rebind("fs." + servername, obj);
+            System.out.println("FileSystem." + servername + " is ready...");
         } catch (Exception ex) {
-            System.out.println("FileSystem." + SERVERNAME + " exceptions: " + ex.getMessage());
+            System.out.println("FileSystem." + servername + " exceptions: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
