@@ -63,7 +63,7 @@ public class ServerWithList {
             if (!serverList.contains(servername)) {
                 serverList.add(servername);
                 //  ERROR CASE
-                //  Two servers should have the same name
+                //  Two servers should not have the same name
             } else {
                 String msg = "FileSystem." + servername + " Exception: Server Name already in use.";
                 System.err.println(msg);
