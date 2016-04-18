@@ -88,7 +88,7 @@ public class ServerWithList {
             fos.close();
             fin.close();
         } catch (IOException | ClassNotFoundException ex) {
-            System.out.println("FileSystem." + servername + " Exception: " + ex.getMessage());
+            System.err.println("FileSystem." + servername + " Exception: " + ex.getMessage());
         }
     }
 }
