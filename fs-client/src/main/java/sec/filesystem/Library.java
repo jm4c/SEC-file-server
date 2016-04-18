@@ -156,7 +156,7 @@ public class Library {
             try {
                 server = (InterfaceBlockServer) myReg.lookup("fs.server-" + i);
             } catch (NotBoundException rme) {
-                System.err.println("server-" + i + " is unresponsive...");
+                System.out.println("server-" + i + " is unresponsive...");
                 continue;
             }
             //ENDOF REPLICA CODE BLOCK
@@ -184,7 +184,7 @@ public class Library {
             try {
                 server = (InterfaceBlockServer) myReg.lookup("fs.server-" + i);
             } catch (NotBoundException rme) {
-                System.err.println("server-" + i + " is unresponsive...");
+                System.out.println("server-" + i + " is unresponsive...");
                 continue;
             }
 //ENDOF REPLICA CODE BLOCK
@@ -239,7 +239,7 @@ public class Library {
             try {
                 server = (InterfaceBlockServer) myReg.lookup("fs.server-" + k);
             } catch (NotBoundException rme) {
-                System.err.println("server-" + k + " is unresponsive...");
+                System.out.println("server-" + k + " is unresponsive...");
                 continue;
             }
 //ENDOF REPLICA CODE BLOCK    
@@ -347,7 +347,7 @@ public class Library {
             try {
                 server = (InterfaceBlockServer) myReg.lookup("fs.server-" + k);
             } catch (NotBoundException rme) {
-                System.err.println("server-" + k + " is unresponsive...");
+                System.out.println("server-" + k + " is unresponsive...");
                 continue;
             }
 //ENDOF REPLICA CODE BLOCK 
