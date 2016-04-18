@@ -204,7 +204,7 @@ public class EIDLib_PKCS11 {
 
         }  catch (Throwable e)
         {
-            System.out.println("[Catch] Exception: " + e.getMessage());
+            System.err.println("[Catch] Exception: " + e.getMessage());
             e.printStackTrace();
             return false;
             
