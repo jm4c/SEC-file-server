@@ -129,8 +129,8 @@ public class Library {
             cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
             setPublicKey(cert);
         } catch (PteidException ex) {
-            System.out.println("[Catch] Exception:\n\t" + ex.getMessage());
-            System.out.println("\tReverting to non-smartcard mode.\n");
+            System.err.println("[Catch] Exception:\n\t" + ex.getMessage());
+            System.err.println("\tReverting to non-smartcard mode.");
             setSmartcardSupport(false);
             KeyPair kp = CryptoUtils.setKeyPair();
             setPrivateKey(kp);
@@ -156,7 +156,7 @@ public class Library {
             try {
                 server = (InterfaceBlockServer) myReg.lookup("fs.server-" + i);
             } catch (NotBoundException rme) {
-                System.out.println("server-" + i + " is unresponsive...");
+                System.err.println("server-" + i + " is unresponsive...");
                 continue;
             }
             //ENDOF REPLICA CODE BLOCK
@@ -184,7 +184,7 @@ public class Library {
             try {
                 server = (InterfaceBlockServer) myReg.lookup("fs.server-" + i);
             } catch (NotBoundException rme) {
-                System.out.println("server-" + i + " is unresponsive...");
+                System.err.println("server-" + i + " is unresponsive...");
                 continue;
             }
 //ENDOF REPLICA CODE BLOCK
@@ -239,7 +239,7 @@ public class Library {
             try {
                 server = (InterfaceBlockServer) myReg.lookup("fs.server-" + k);
             } catch (NotBoundException rme) {
-                System.out.println("server-" + k + " is unresponsive...");
+                System.err.println("server-" + k + " is unresponsive...");
                 continue;
             }
 //ENDOF REPLICA CODE BLOCK    
@@ -347,7 +347,7 @@ public class Library {
             try {
                 server = (InterfaceBlockServer) myReg.lookup("fs.server-" + k);
             } catch (NotBoundException rme) {
-                System.out.println("server-" + k + " is unresponsive...");
+                System.err.println("server-" + k + " is unresponsive...");
                 continue;
             }
 //ENDOF REPLICA CODE BLOCK 

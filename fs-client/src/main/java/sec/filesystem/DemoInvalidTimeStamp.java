@@ -23,7 +23,6 @@ import types.Buffer_t;
 import types.Data_t;
 import types.Header_t;
 import types.Id_t;
-import types.Pk_t;
 import types.Sig_t;
 import utils.CryptoUtils;
 
@@ -57,9 +56,6 @@ public class DemoInvalidTimeStamp {
                     System.setOut(originalStream);
                 }
             }
-        } else {
-            System.out.println("INVALID MODE, TERMINATING DEMOAPP");
-            System.exit(-1);
         }
     }
 
@@ -96,7 +92,7 @@ public class DemoInvalidTimeStamp {
 
         } catch (WrongHeaderSequenceException ex) {
             swapOutStream("enable", args);
-            System.out.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
+            System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
             for (String s : args) {
                 if (s.equalsIgnoreCase("-log")) {
                     Logger.getLogger(DemoInvalidTimeStamp.class.getName()).log(Level.SEVERE, null, ex);
@@ -107,7 +103,7 @@ public class DemoInvalidTimeStamp {
 
         } catch (Exception ex) {
             swapOutStream("enable", args);
-            System.out.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
+            System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
             for (String s : args) {
                 if (s.equalsIgnoreCase("-log")) {
                     Logger.getLogger(DemoInvalidTimeStamp.class.getName()).log(Level.SEVERE, null, ex);
@@ -134,8 +130,8 @@ public class DemoInvalidTimeStamp {
             cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
             c.setPublicKey(cert);
         } catch (PteidException ex) {
-            System.out.println("[Catch] Exception:\n\t" + ex.getMessage());
-            System.out.println("\tReverting to non-smartcard mode.\n");
+            System.err.println("[Catch] Exception:\n\t" + ex.getMessage());
+            System.err.println("\tReverting to non-smartcard mode.");
             c.setSmartcardSupport(false);
             KeyPair kp = CryptoUtils.setKeyPair();
             c.setPrivateKey(kp);
