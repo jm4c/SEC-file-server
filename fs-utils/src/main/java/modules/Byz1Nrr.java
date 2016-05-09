@@ -73,7 +73,7 @@ public class Byz1Nrr {
         for (int k = 0; k < InterfaceBlockServer.REPLICAS; k++){
             acklist.add(-1);
         }
-        // sigma = sign(self, bonrr||self||WRITE||wts||v);
+        //sigma = sign(self, bonrr||self||WRITE||wts||v);
         // TODO
         
         // forall q ∈ Π do
@@ -87,8 +87,7 @@ public class Byz1Nrr {
             try {
                 server = (InterfaceBlockServer) myReg.lookup("fs." + servername);
                 //TODO
-                // messagetype = WRITE;
-                //authenticatedLink.send(this, messageType|wts|v|sigma);
+                //authenticatedLink.send(this.id(), [WRITE, wts, v, sigma]);
             } 
             catch (NotBoundException | ConnectException rme) {
                 System.out.println("fs." + servername + " is unresponsive...");
@@ -121,7 +120,7 @@ public class Byz1Nrr {
                 server = (InterfaceBlockServer) myReg.lookup("fs." + servername);
                 //TODO
                 // messagetype = READ;
-                //authenticatedLink.send(this, messageType|rid);
+                //authenticatedLink.send(this.id(), [READ, rid]);
             } 
             catch (NotBoundException | ConnectException rme) {
                 System.out.println("fs." + servername + " is unresponsive...");
