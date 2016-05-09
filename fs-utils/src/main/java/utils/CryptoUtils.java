@@ -1,18 +1,10 @@
 package utils;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
+import java.security.*;
 
 public class CryptoUtils {
 
@@ -57,5 +49,15 @@ public class CryptoUtils {
         sig.update(signedData);
         return sig.verify(signature);
     }
+
+    public static byte[] getHMACdigest(byte[] message, SecretKey secretKey) throws NoSuchAlgorithmException, InvalidKeyException {
+        String algorithm = "HmacSHA1";
+        SecretKeySpec keySpec = new SecretKeySpec(secretKey.getEncoded(), algorithm);
+        Mac mac = Mac.getInstance(algorithm);
+        mac.init(keySpec);
+        return mac.doFinal(message);
+    }
+
+
 
 }
