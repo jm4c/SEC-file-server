@@ -4,7 +4,13 @@ import eIDlib_PKCS11.EIDLib_PKCS11;
 import exceptions.IDMismatchException;
 import exceptions.NullContentException;
 import interfaces.InterfaceBlockServer;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.rmi.ConnectException;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -33,6 +39,7 @@ public class Library {
     private PKCS11 pkcs11;
 
     protected static InterfaceBlockServer server;
+    private static final String SERVERLISTPATH = "../fs-utils/serverlist.dat";
 
     private List fileList;
 
@@ -149,68 +156,76 @@ public class Library {
             signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
         }
 
-        //REPLICA CODE BLOCK
-        for (int i = 0; i < InterfaceBlockServer.REPLICAS; i++) {
+//REPLICA CODE BLOCK 
+        //  Read the serverList file
+        FileInputStream fin = new FileInputStream(SERVERLISTPATH);
+        ObjectInputStream ois = new ObjectInputStream(fin);
+        ArrayList<String> serverList = (ArrayList) ois.readObject();
+
+        for (String servername : serverList) {
             Registry myReg = LocateRegistry.getRegistry("localhost");
-            System.out.println("Contacting server-" + i);
+            System.out.println("Contacting fs." + servername);
             try {
-                server = (InterfaceBlockServer) myReg.lookup("fs.server-" + i);
-            } catch (NotBoundException rme) {
-                System.out.println("server-" + i + " is unresponsive...");
-                continue;
-            }
-            //ENDOF REPLICA CODE BLOCK
+                server = (InterfaceBlockServer) myReg.lookup("fs." + servername);
+                System.out.println(server.greeting() + "\n");
+                System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
+                setClientID(server.put_k(headerData, signature, getPublicKey()));
 
-            System.out.println(server.greeting() + "\n");
-            System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
-            setClientID(server.put_k(headerData, signature, getPublicKey()));
-
-            if (isSmartcardSupported()) {
-                server.storePubKey(cert);
-                EIDLib_PKCS11.closeLib(pkcs11, p11_session);
-            } else {
-                server.storePubKey(getPublicKey());
+                if (isSmartcardSupported()) {
+                    server.storePubKey(cert);
+                    EIDLib_PKCS11.closeLib(pkcs11, p11_session);
+                } else {
+                    server.storePubKey(getPublicKey());
+                }
+            } catch (NotBoundException | ConnectException rme) {
+                System.out.println("fs." + servername + " is unresponsive...");
             }
+//ENDOF REPLICA CODE BLOCK
+
         }
         return getClientID();
     }
 
     protected int fs_read(Pk_t pk, int pos, int size, Buffer_t contents) throws Exception {
         byte[] buff = new byte[0];
-//REPLICA CODE BLOCK
-        for (int i = 0; i < InterfaceBlockServer.REPLICAS; i++) {
+
+//REPLICA CODE BLOCK 
+        //  Read the serverList file
+        FileInputStream fin = new FileInputStream(SERVERLISTPATH);
+        ObjectInputStream ois = new ObjectInputStream(fin);
+        ArrayList<String> serverList = (ArrayList) ois.readObject();
+
+        for (String servername : serverList) {
             Registry myReg = LocateRegistry.getRegistry("localhost");
-            System.out.println("Contacting server-" + i);
+            System.out.println("Contacting fs." + servername);
             try {
-                server = (InterfaceBlockServer) myReg.lookup("fs.server-" + i);
-            } catch (NotBoundException rme) {
-                System.out.println("server-" + i + " is unresponsive...");
-                continue;
+                server = (InterfaceBlockServer) myReg.lookup("fs." + servername);
+                Id_t id = server.getID(pk);
+                Data_t data = server.get(id);
+
+                @SuppressWarnings("unchecked")
+                List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
+
+                byte[][] originalContentParts = new byte[originalFileList.size()][];
+                for (int j = 0; j < originalFileList.size(); j++) {
+                    originalContentParts[j] = server.get(originalFileList.get(j)).getValue();
+                }
+
+                //all stored data
+                Buffer_t src = joinContent(originalContentParts);
+
+                if (src.getValue().length < pos + size) {
+                    buff = new byte[src.getValue().length - pos];
+                } else {
+                    buff = new byte[size];
+                }
+
+                System.arraycopy(src.getValue(), pos, buff, 0, buff.length);
+                contents.setValue(buff);
+            } catch (NotBoundException | ConnectException rme) {
+                System.out.println("fs." + servername + " is unresponsive...");
             }
-//ENDOF REPLICA CODE BLOCK
-
-            Id_t id = server.getID(pk);
-            Data_t data = server.get(id);
-
-            @SuppressWarnings("unchecked")
-            List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
-
-            byte[][] originalContentParts = new byte[originalFileList.size()][];
-            for (int j = 0; j < originalFileList.size(); j++) {
-                originalContentParts[j] = server.get(originalFileList.get(j)).getValue();
-            }
-
-            //all stored data
-            Buffer_t src = joinContent(originalContentParts);
-
-            if (src.getValue().length < pos + size) {
-                buff = new byte[src.getValue().length - pos];
-            } else {
-                buff = new byte[size];
-            }
-
-            System.arraycopy(src.getValue(), pos, buff, 0, buff.length);
-            contents.setValue(buff);
+//ENDOF REPLICA CODE BLOCK 
         }
         return buff.length;
     }
@@ -232,126 +247,133 @@ public class Library {
 
         System.out.println(this.getClientID().getValue());
 
-        //REPLICA CODE BLOCK
-        for (int k = 0; k < InterfaceBlockServer.REPLICAS; k++) {
+//REPLICA CODE BLOCK 
+        //  Read the serverList file
+        FileInputStream fin = new FileInputStream(SERVERLISTPATH);
+        ObjectInputStream ois = new ObjectInputStream(fin);
+        ArrayList<String> serverList = (ArrayList) ois.readObject();
+
+        for (String servername : serverList) {
             Registry myReg = LocateRegistry.getRegistry("localhost");
-            System.out.println("Contacting server-" + k);
+            System.out.println("Contacting fs." + servername);
             try {
-                server = (InterfaceBlockServer) myReg.lookup("fs.server-" + k);
-            } catch (NotBoundException rme) {
-                System.out.println("server-" + k + " is unresponsive...");
-                continue;
-            }
-//ENDOF REPLICA CODE BLOCK    
+                server = (InterfaceBlockServer) myReg.lookup("fs." + servername);
+                //Client's ID can only be a header file
+                Data_t data = server.get(this.getClientID());
 
-            //Client's ID can only be a header file
-            Data_t data = server.get(this.getClientID());
-
-            if (data == null) {
-                throw new NullContentException("data is null");
-            }
-            //Header file's data is always a list of other files' IDs
-            @SuppressWarnings("unchecked")
-            List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
-
-            Buffer_t base;
-
-            if (originalFileList.isEmpty()) {
-                base = new Buffer_t(new byte[pos + size]);
-            } else {
-                byte[][] originalContentParts = new byte[originalFileList.size()][];
-                for (int i = 0; i < originalFileList.size(); i++) {
-                    originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
+                if (data == null) {
+                    throw new NullContentException("data is null");
                 }
-                base = joinContent(originalContentParts);
+                //Header file's data is always a list of other files' IDs
+                @SuppressWarnings("unchecked")
+                List<Id_t> originalFileList = ((Header_t) CryptoUtils.deserialize(data.getValue())).getValue();
 
-                //	puts old content into a bigger file
-                if (base.getValue().length < pos + size) {
-                    Buffer_t auxBase = new Buffer_t(new byte[pos + size]);
-                    System.arraycopy(base.getValue(), 0, auxBase.value, 0, size);
-                    base = auxBase;
+                Buffer_t base;
+
+                if (originalFileList.isEmpty()) {
+                    base = new Buffer_t(new byte[pos + size]);
+                } else {
+                    byte[][] originalContentParts = new byte[originalFileList.size()][];
+                    for (int i = 0; i < originalFileList.size(); i++) {
+                        originalContentParts[i] = server.get(originalFileList.get(i)).getValue();
+                    }
+                    base = joinContent(originalContentParts);
+
+                    //	puts old content into a bigger file
+                    if (base.getValue().length < pos + size) {
+                        Buffer_t auxBase = new Buffer_t(new byte[pos + size]);
+                        System.arraycopy(base.getValue(), 0, auxBase.value, 0, size);
+                        base = auxBase;
+                    }
                 }
-            }
-            System.arraycopy(contents.getValue(), 0, base.value, pos, size);
+                System.arraycopy(contents.getValue(), 0, base.value, pos, size);
 
-            byte[][] filesArray = splitContent(base);
+                byte[][] filesArray = splitContent(base);
 
-            List<Id_t> newFileList = new ArrayList<>();
-            for (byte[] filesArray1 : filesArray) {
-                newFileList.add(new Id_t(HashUtils.hash(filesArray1, null)));
-            }
-
-            Header_t header = new Header_t(newFileList);
-
-            Data_t headerData = new Data_t(CryptoUtils.serialize(header));
-            Sig_t signature;
-            if (isSmartcardSupported()) {
-                signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
-            } else {
-                signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
-            }
-
-            //uploads header first to check signature
-            if (!getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
-                throw new IDMismatchException("Client's ID does not match main block ID!");
-            }
-
-            if (isSmartcardSupported()) {
-                server.storePubKey(cert);
-            } else {
-                server.storePubKey(getPublicKey());
-            }
-
-            //uploads contents
-            if (originalFileList.isEmpty()) {
-                System.out.println("Original it's empty");
-                for (int i = 0; i < newFileList.size(); i++) {
-                    System.out.println("new block! (" + i + ")");
-                    System.out.println(server.put_h(new Data_t(filesArray[i])).getValue());
+                List<Id_t> newFileList = new ArrayList<>();
+                for (byte[] filesArray1 : filesArray) {
+                    newFileList.add(new Id_t(HashUtils.hash(filesArray1, null)));
                 }
-            } else {
-                boolean addBlockFlag = true;
-                for (int i = 0; i < newFileList.size(); i++) {
-                    addBlockFlag = true;
-                    System.out.println("\nNEW[" + i + "]:" + newFileList.get(i).getValue());
 
-                    for (int j = 0; j < originalFileList.size(); j++) {
-                        System.out.println("OLD[" + j + "]:" + originalFileList.get(j).getValue());
-                        if (originalFileList.get(j).equals(newFileList.get(i))) {
-                            addBlockFlag = false;
-                            break;
+                Header_t header = new Header_t(newFileList);
+
+                Data_t headerData = new Data_t(CryptoUtils.serialize(header));
+                Sig_t signature;
+                if (isSmartcardSupported()) {
+                    signature = new Sig_t(pkcs11.C_Sign(p11_session, headerData.getValue()));
+                } else {
+                    signature = new Sig_t(CryptoUtils.sign(headerData.getValue(), getPrivateKey()));
+                }
+
+                //uploads header first to check signature
+                if (!getClientID().equals(server.put_k(headerData, signature, getPublicKey()))) {
+                    throw new IDMismatchException("Client's ID does not match main block ID!");
+                }
+
+                if (isSmartcardSupported()) {
+                    server.storePubKey(cert);
+                } else {
+                    server.storePubKey(getPublicKey());
+                }
+
+                //uploads contents
+                if (originalFileList.isEmpty()) {
+                    System.out.println("Original it's empty");
+                    for (int i = 0; i < newFileList.size(); i++) {
+                        System.out.println("new block! (" + i + ")");
+                        System.out.println(server.put_h(new Data_t(filesArray[i])).getValue());
+                    }
+                } else {
+                    boolean addBlockFlag = true;
+                    for (int i = 0; i < newFileList.size(); i++) {
+                        addBlockFlag = true;
+                        System.out.println("\nNEW[" + i + "]:" + newFileList.get(i).getValue());
+
+                        for (int j = 0; j < originalFileList.size(); j++) {
+                            System.out.println("OLD[" + j + "]:" + originalFileList.get(j).getValue());
+                            if (originalFileList.get(j).equals(newFileList.get(i))) {
+                                addBlockFlag = false;
+                                break;
+                            }
+                        }
+
+                        if (addBlockFlag) {
+                            System.out.println("new block!");
+                            server.put_h(new Data_t(filesArray[i]));
+
                         }
                     }
-
-                    if (addBlockFlag) {
-                        System.out.println("new block!");
-                        server.put_h(new Data_t(filesArray[i]));
-
-                    }
                 }
-            }
-            this.setFileList(newFileList);
+                this.setFileList(newFileList);
 
-            if (isSmartcardSupported()) {
-                EIDLib_PKCS11.closeLib(pkcs11, p11_session);
+                if (isSmartcardSupported()) {
+                    EIDLib_PKCS11.closeLib(pkcs11, p11_session);
+                }
+            } catch (NotBoundException | ConnectException rme) {
+                System.out.println("fs." + servername + " is unresponsive...");
             }
+//ENDOF REPLICA CODE BLOCK
         }
     }
 
     protected List fs_list() throws Exception {
         List keyList = new ArrayList<>();
-//REPLICA CODE BLOCK
-        for (int k = 0; k < InterfaceBlockServer.REPLICAS; k++) {
+//REPLICA CODE BLOCK 
+        //  Read the serverList file
+        FileInputStream fin = new FileInputStream(SERVERLISTPATH);
+        ObjectInputStream ois = new ObjectInputStream(fin);
+        ArrayList<String> serverList = (ArrayList) ois.readObject();
+
+        for (String servername : serverList) {
             Registry myReg = LocateRegistry.getRegistry("localhost");
-            System.out.println("Contacting server-" + k);
+            System.out.println("Contacting fs." + servername);
             try {
-                server = (InterfaceBlockServer) myReg.lookup("fs.server-" + k);
-            } catch (NotBoundException rme) {
-                System.out.println("server-" + k + " is unresponsive...");
-                continue;
+                server = (InterfaceBlockServer) myReg.lookup("fs." + servername);
+                keyList = server.readPubKeys();
+            } catch (NotBoundException | ConnectException rme) {
+                System.out.println("fs." + servername + " is unresponsive...");
             }
-//ENDOF REPLICA CODE BLOCK 
-            keyList = server.readPubKeys();
+//ENDOF REPLICA CODE BLOCK
         }
         return keyList;
     }
