@@ -119,7 +119,6 @@ public class Byz1Nrr {
             try {
                 server = (InterfaceBlockServer) myReg.lookup("fs." + servername);
                 //TODO
-                // messagetype = READ;
                 //authenticatedLink.send(this.id(), [READ, rid]);
             } 
             catch (NotBoundException | ConnectException rme) {
