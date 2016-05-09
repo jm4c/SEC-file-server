@@ -37,9 +37,6 @@ public class DemoReadFileByPKey {
                     System.setOut(originalStream);
                 }
             }
-        } else {
-            System.out.println("INVALID MODE, TERMINATING DEMOAPP");
-            System.exit(-1);
         }
     }
 
@@ -97,7 +94,7 @@ public class DemoReadFileByPKey {
 
         } catch (Exception ex) {
             swapOutStream("enable", args);
-            System.out.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
+            System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
             for (String s : args) {
                 if (s.equalsIgnoreCase("-log")) {
                     Logger.getLogger(DemoReadFileByPKey.class.getName()).log(Level.SEVERE, null, ex);

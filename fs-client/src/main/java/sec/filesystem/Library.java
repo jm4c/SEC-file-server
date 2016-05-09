@@ -129,8 +129,8 @@ public class Library {
             cert = EIDLib_PKCS11.getCertFromByteArray(EIDLib_PKCS11.getCitizenAuthCertInBytes());
             setPublicKey(cert);
         } catch (PteidException ex) {
-            System.out.println("[Catch] Exception:\n\t" + ex.getMessage());
-            System.out.println("\tReverting to non-smartcard mode.\n");
+            System.err.println("[Catch] Exception:\n\t" + ex.getMessage());
+            System.err.println("\tReverting to non-smartcard mode.");
             setSmartcardSupport(false);
             KeyPair kp = CryptoUtils.setKeyPair();
             setPrivateKey(kp);

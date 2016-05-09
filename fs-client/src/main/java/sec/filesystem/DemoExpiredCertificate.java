@@ -40,10 +40,7 @@ public class DemoExpiredCertificate {
                     System.setOut(originalStream);
                 }
             }
-        } else {
-            System.out.println("INVALID MODE, TERMINATING DEMOAPP");
-            System.exit(-1);
-        }
+        } 
     }
 
     public static void main(String[] args) {
@@ -62,7 +59,7 @@ public class DemoExpiredCertificate {
 
         } catch (RevokedCertificateException ex) {
             swapOutStream("enable", args);
-            System.out.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
+            System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
             for (String s : args) {
                 if (s.equalsIgnoreCase("-log")) {
                     Logger.getLogger(DemoExpiredCertificate.class.getName()).log(Level.SEVERE, null, ex);
@@ -73,7 +70,7 @@ public class DemoExpiredCertificate {
 
         } catch (Exception ex) {
             swapOutStream("enable", args);
-            System.out.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
+            System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
             for (String s : args) {
                 if (s.equalsIgnoreCase("-log")) {
                     Logger.getLogger(DemoExpiredCertificate.class.getName()).log(Level.SEVERE, null, ex);

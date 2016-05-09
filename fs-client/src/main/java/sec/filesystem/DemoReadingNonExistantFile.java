@@ -42,9 +42,6 @@ public class DemoReadingNonExistantFile {
                     System.setOut(originalStream);
                 }
             }
-        } else {
-            System.out.println("INVALID MODE, TERMINATING DEMOAPP");
-            System.exit(-1);
         }
     }
 
@@ -94,7 +91,7 @@ public class DemoReadingNonExistantFile {
             
         } catch (FileNotFoundException ex) {
             swapOutStream("enable", args);
-            System.out.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
+            System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
             for (String s : args) {
                 if (s.equalsIgnoreCase("-log")) {
                     Logger.getLogger(DemoReadingNonExistantFile.class.getName()).log(Level.SEVERE, null, ex);
@@ -105,7 +102,7 @@ public class DemoReadingNonExistantFile {
 
         } catch (Exception ex) {
             swapOutStream("enable", args);
-            System.out.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
+            System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
             for (String s : args) {
                 if (s.equalsIgnoreCase("-log")) {
                     Logger.getLogger(DemoReadingNonExistantFile.class.getName()).log(Level.SEVERE, null, ex);
