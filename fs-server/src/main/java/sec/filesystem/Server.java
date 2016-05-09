@@ -11,7 +11,7 @@ import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 import java.util.ArrayList;
 
-public class ServerWithList {
+public class Server {
 
     private static final int PORT = 1099;
     private static final String SERVERLISTPATH = "../fs-utils/serverlist.dat";
