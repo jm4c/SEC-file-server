@@ -81,16 +81,16 @@ public class Byz1Nrr {
         FileInputStream fin = new FileInputStream(SERVERLISTPATH);
         ObjectInputStream ois = new ObjectInputStream(fin);
         ArrayList<String> serverList = (ArrayList) ois.readObject();
-        for (String servername : serverList) {
+        for (String q : serverList) {
             Registry myReg = LocateRegistry.getRegistry("localhost");
-            System.out.println("Contacting fs." + servername);
+            System.out.println("Contacting fs." + q);
             try {
-                server = (InterfaceBlockServer) myReg.lookup("fs." + servername);
+                server = (InterfaceBlockServer) myReg.lookup("fs." + q);
                 //TODO
-                //authenticatedLink.send(this.id(), [WRITE, wts, v, sigma]);
+                //authenticatedLink.send(q, [WRITE, wts, v, sigma]);
             } 
             catch (NotBoundException | ConnectException rme) {
-                System.out.println("fs." + servername + " is unresponsive...");
+                System.out.println("fs." + q + " is unresponsive...");
             }
         }
     }
@@ -113,16 +113,16 @@ public class Byz1Nrr {
         FileInputStream fin = new FileInputStream(SERVERLISTPATH);
         ObjectInputStream ois = new ObjectInputStream(fin);
         ArrayList<String> serverList = (ArrayList) ois.readObject();
-        for (String servername : serverList) {
+        for (String q : serverList) {
             Registry myReg = LocateRegistry.getRegistry("localhost");
-            System.out.println("Contacting fs." + servername);
+            System.out.println("Contacting fs." + q);
             try {
-                server = (InterfaceBlockServer) myReg.lookup("fs." + servername);
+                server = (InterfaceBlockServer) myReg.lookup("fs." + q);
                 //TODO
-                //authenticatedLink.send(this.id(), [READ, rid]);
+                //authenticatedLink.send(q, [READ, rid]);
             } 
             catch (NotBoundException | ConnectException rme) {
-                System.out.println("fs." + servername + " is unresponsive...");
+                System.out.println("fs." + q + " is unresponsive...");
             }
         }
     }
