@@ -1,9 +1,6 @@
 package sec.filesystem;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -24,11 +21,6 @@ public class TCPServer {
                 assert serverSocket != null;
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("ACCEPTS CLIENT");
-
-                BufferedReader inFromClient =
-                        new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                DataOutputStream outToClient =
-                        new DataOutputStream(clientSocket.getOutputStream());
 
                 System.out.println("STARTS THREAD");
                 TCPServerThread st = new TCPServerThread(clientSocket);

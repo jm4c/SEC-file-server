@@ -4,15 +4,9 @@ package sec.filesystem;
 import exceptions.IDMismatchException;
 import exceptions.InvalidSignatureException;
 import exceptions.WrongHeaderSequenceException;
-import types.Data_t;
-import types.Id_t;
-import types.Pk_t;
-import types.Sig_t;
+import types.*;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -28,50 +22,47 @@ class TCPServerThread {
     void run() {
         try {
             ImplementationBlockServer server = new ImplementationBlockServer();
-            BufferedReader inFromClient =
-                    new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            DataOutputStream outToClient =
-                    new DataOutputStream(socket.getOutputStream());
-            String inputString = inFromClient.readLine();
-            String[] input = inputString.split(":");
+            ObjectInputStream inFromClient=
+                    new ObjectInputStream(socket.getInputStream());
+            ObjectOutputStream outToClient =
+                    new ObjectOutputStream(socket.getOutputStream());
+            Message messageToClient = null;
             try {
+                Message messageFromClient = (Message) inFromClient.readObject();
+
                 Data_t data = null;
                 Sig_t signature = null;
                 Pk_t publicKey = null;
                 Id_t id = null;
 
-                switch (input[0]) {
-                    case "put_h":
-                        //TODO
+                //TODO
+                switch (messageFromClient.getMessageType()) {
+                    case PUT_H:
+                        data = messageFromClient.getData();
                         server.put_h(data);
                         break;
-                    case "put_k":
-                        //TODO
+                    case PUT_K:
+                        data = messageFromClient.getData();
+                        signature = messageFromClient.getSignature();
+                        publicKey = messageFromClient.getPublicKey();
                         server.put_k(data, signature, publicKey);
                         break;
-                    case "get":
-                        //TODO
+                    case GET:
+                        id = messageFromClient.getID();
                         server.get(id);
                         break;
                     default:
 
                 }
-            } catch (NoSuchAlgorithmException e) {
+            } catch (NoSuchAlgorithmException | IDMismatchException | InvalidKeyException |
+                    WrongHeaderSequenceException | InvalidSignatureException | SignatureException |
+                    ClassNotFoundException e) {
                 e.printStackTrace();
-            } catch (IDMismatchException e) {
-                e.printStackTrace();
-            } catch (WrongHeaderSequenceException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
-                e.printStackTrace();
-            } catch (SignatureException e) {
-                e.printStackTrace();
-            } catch (InvalidSignatureException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                messageToClient = new Message.MessageBuilder(Message.MessageType.ERROR).error(e.toString()).createMessage();
             }
 
+            //sends message with return to client
+            outToClient.writeObject(messageToClient);
 
         } catch (IOException e) {
             e.printStackTrace();
