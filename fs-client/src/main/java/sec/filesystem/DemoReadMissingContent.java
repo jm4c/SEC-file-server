@@ -49,7 +49,8 @@ public class DemoReadMissingContent {
 
     public static void main(String[] args) {
         try {
-            Library c = new Library();
+            //Library c = new Library();
+            TCPClient c = new TCPClient();
             Buffer_t buffer = new Buffer_t(CryptoUtils.serialize(""));
 
             // Initializing the file system

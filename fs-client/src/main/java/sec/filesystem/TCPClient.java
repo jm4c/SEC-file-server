@@ -107,7 +107,6 @@ public class TCPClient {
     }
 
     protected Id_t fs_init() throws Exception {
-
         KeyPair kp = CryptoUtils.setKeyPair();
         setPrivateKey(kp);
         setPublicKey(kp);
@@ -377,7 +376,7 @@ public class TCPClient {
             // TCP
             Message response = sendMessageToServer(new Message.MessageBuilder(Message.MessageType.LIST_PK)
                     .createMessage());
-            keyList = response.getPublicKeylist();
+            keyList = response.getPublicKeyList();
 
 //ENDOF REPLICA CODE BLOCK
         }
@@ -385,32 +384,31 @@ public class TCPClient {
     }
 
 
-    private Message sendMessageToServer(Message messageToServer) throws TCPServerException {
-        Message messageFromServer = null;
-        try {
-            Socket clientSocket = new Socket("localhost", PORT);
-            ObjectInputStream inFromServer =
-                    new ObjectInputStream(clientSocket.getInputStream());
-            ObjectOutputStream outToServer =
-                    new ObjectOutputStream(clientSocket.getOutputStream());
-            outToServer.writeObject(messageToServer);
-            messageFromServer = (Message) inFromServer.readObject();
-            if (messageFromServer.getMessageType().equals(Message.MessageType.ERROR))
-                throw new TCPServerException(messageFromServer.getErrorMessage());
+    private Message sendMessageToServer(Message messageToServer) throws Exception {
+        Message messageFromServer;
+        Socket clientSocket = new Socket("localhost", PORT);
+        ObjectOutputStream outToServer =
+                new ObjectOutputStream(clientSocket.getOutputStream());
+        ObjectInputStream inFromServer =
+                new ObjectInputStream(clientSocket.getInputStream());
+        outToServer.writeObject(messageToServer);
+        messageFromServer = (Message) inFromServer.readObject();
+        if (messageFromServer.getMessageType().equals(Message.MessageType.ERROR))
+            throw messageFromServer.getException();
 
-            inFromServer.close();
-            outToServer.close();
-            clientSocket.close();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        inFromServer.close();
+        outToServer.close();
+        clientSocket.close();
+
         return messageFromServer;
     }
 
 
 
-    public static void main(String argv[]){
-        Message message = new Message.MessageBuilder(Message.MessageType.RE_GET).data(null).createMessage();
+    public static void main(String argv[]) throws Exception {
+        TCPClient client = new TCPClient();
+        Message message = new Message.MessageBuilder(Message.MessageType.ACK).createMessage();
+        client.sendMessageToServer(message);
         System.out.println(message.getMessageType());
     }
 }

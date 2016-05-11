@@ -48,8 +48,10 @@ public class DemoWriteToAnotherClientsFile {
 
     public static void main(String[] args) {
         try {
-            Library c1 = new Library();
-            Library c2 = new Library();
+            //Library c1 = new Library();
+            //Library c2 = new Library();
+            TCPClient c1 = new TCPClient();
+            TCPClient c2 = new TCPClient();
             Buffer_t buffer = new Buffer_t(CryptoUtils.serialize(""));
 
             // Initializing the file system for client 1

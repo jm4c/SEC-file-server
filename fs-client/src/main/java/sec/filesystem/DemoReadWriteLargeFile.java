@@ -42,7 +42,8 @@ public class DemoReadWriteLargeFile {
 
     public static void main(String[] args) {
         try {
-            Library c = new Library();
+            //Library c = new Library();
+            TCPClient c = new TCPClient();
             Buffer_t buffer = new Buffer_t(CryptoUtils.serialize(""));
 
             // Initializing the file system
@@ -50,7 +51,7 @@ public class DemoReadWriteLargeFile {
             swapOutStream("disable", args);
             c.setClientID(c.fs_init());
             swapOutStream("enable", args);
-            System.out.println("// [2] File System has been initialized sucessfully.");
+            System.out.println("// [2] File System has been initialized successfully.");
             System.out.println("// [2] Client ID assigned by the server:\n\t" + c.getClientID().getValue());
 
             // Writing to the file at position 0
