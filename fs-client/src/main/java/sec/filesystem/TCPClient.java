@@ -377,7 +377,7 @@ public class TCPClient {
             // TCP
             Message response = sendMessageToServer(new Message.MessageBuilder(Message.MessageType.LIST_PK)
                     .createMessage());
-            keyList = response.getPublicKeylist();
+            keyList = response.getPublicKeyList();
 
 //ENDOF REPLICA CODE BLOCK
         }

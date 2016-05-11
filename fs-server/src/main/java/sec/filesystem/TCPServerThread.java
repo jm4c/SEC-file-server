@@ -86,6 +86,7 @@ class TCPServerThread {
                                 .createMessage();
                         break;
                     default:
+                        System.out.println("Hello! Not a valid message type.");
 
                 }
             } catch (NoSuchAlgorithmException | IDMismatchException | InvalidKeyException
