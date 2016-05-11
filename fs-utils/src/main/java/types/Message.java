@@ -1,12 +1,14 @@
 package types;
 
+import java.util.List;
+
 import static types.Message.MessageType.GET;
 
 public class Message {
 
     public enum MessageType {
-        //DATA, ACK, RE_ACK;
-        PUT_K, PUT_H, GET, RE_PUT, RE_GET, ERROR
+        PUT_K, PUT_H, GET, GET_ID, STORE_PK, LIST_PK,
+        RE_PUT, RE_GET, ACK, NACK, RE_LIST_PK, ERROR
     }
 
     private MessageType messageType;
@@ -14,15 +16,17 @@ public class Message {
     private Data_t data;
     private Sig_t signature;
     private Pk_t publicKey;
+    private List publicKeylist;
     private String errorMessage;
 
 
-    public Message(
+    private Message(
             final MessageType messageType,
             final Id_t id,
             final Data_t data,
             final Sig_t signature,
             final Pk_t publicKey,
+            final List publicKeyList,
             final String errorMessage )
     {
         this.messageType = messageType;
@@ -31,7 +35,7 @@ public class Message {
         this.signature = signature;
         this.publicKey = publicKey;
         //TODO HMAC instead of publicKey and signature?
-
+        this.publicKeylist = publicKeylist;
         this.errorMessage = errorMessage;
     }
 
@@ -51,8 +55,13 @@ public class Message {
     public Sig_t getSignature(){
         return this.signature;
     }
+
     public Pk_t getPublicKey(){
         return this.publicKey;
+    }
+
+    public List getPublicKeylist(){
+        return this.publicKeylist;
     }
 
     public String getErrorMessage(){
@@ -66,6 +75,7 @@ public class Message {
         private Data_t data;
         private Sig_t signature;
         private Pk_t publicKey;
+        private List publicKeyList;
         private String errorMessage;
 
         public MessageBuilder (MessageType messageType){
@@ -91,6 +101,10 @@ public class Message {
             this.publicKey = publicKey;
             return this;
         }
+        public MessageBuilder list(List publicKeyList){
+            this.publicKeyList = publicKeyList;
+            return this;
+        }
 
         public MessageBuilder error(String errorMessage){
             this.errorMessage = errorMessage;
@@ -99,7 +113,7 @@ public class Message {
 
         public Message createMessage()
         {
-            return new Message(messageType, id, data, signature, publicKey, errorMessage);
+            return new Message(messageType, id, data, signature, publicKey, publicKeyList, errorMessage);
 
         }
     }
