@@ -2,8 +2,6 @@ package types;
 
 import java.util.List;
 
-import static types.Message.MessageType.GET;
-
 public class Message {
 
     public enum MessageType {
@@ -16,7 +14,7 @@ public class Message {
     private Data_t data;
     private Sig_t signature;
     private Pk_t publicKey;
-    private List publicKeylist;
+    private List publicKeyList;
     private String errorMessage;
 
 
@@ -35,7 +33,7 @@ public class Message {
         this.signature = signature;
         this.publicKey = publicKey;
         //TODO HMAC instead of publicKey and signature?
-        this.publicKeylist = publicKeylist;
+        this.publicKeyList = publicKeyList;
         this.errorMessage = errorMessage;
     }
 
@@ -60,8 +58,8 @@ public class Message {
         return this.publicKey;
     }
 
-    public List getPublicKeylist(){
-        return this.publicKeylist;
+    public List getPublicKeyList(){
+        return this.publicKeyList;
     }
 
     public String getErrorMessage(){
