@@ -112,11 +112,11 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     @Override
-    public Data_t get(Id_t id) throws FileNotFoundException, IOException, InvalidKeyException, InvalidSignatureException, NoSuchAlgorithmException, ClassNotFoundException, SignatureException, IDMismatchException {
+    public Data_t get(Id_t id) throws IOException, InvalidKeyException, InvalidSignatureException, NoSuchAlgorithmException, ClassNotFoundException, SignatureException, IDMismatchException {
         PublicKeyBlock b;
         // Main/Header block
         String s = id.getValue();
-        FileInputStream fin = null;
+        FileInputStream fin;
         fin = new FileInputStream("./files/" + s + ".dat");
         ObjectInputStream ois = new ObjectInputStream(fin);
         Object obj = ois.readObject();
@@ -161,7 +161,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         //check timestamp, in order to defend against replay attacks
         if (headerAlreadyExists) {
             Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
+            System.out.println("OLD: " + oldTimestamp.toString());
             Timestamp newTimestamp = ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
+            System.out.println("NEW: " + newTimestamp.toString());
             if (!newTimestamp.after(oldTimestamp)) {
                 throw new WrongHeaderSequenceException("New header's timestamp: "
                         + newTimestamp.toString() + "\n"
@@ -187,7 +189,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     }
 
     @Override
-    public Id_t put_h(Data_t data) throws NoSuchAlgorithmException, FileNotFoundException, IOException {
+    public Id_t put_h(Data_t data) throws NoSuchAlgorithmException, IOException {
         Id_t id = calculateBlockID(data);
         String s = id.getValue();
         new File("./files/").mkdirs();

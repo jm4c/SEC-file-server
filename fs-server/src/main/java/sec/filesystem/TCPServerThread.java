@@ -15,18 +15,20 @@ import java.util.List;
 
 class TCPServerThread {
     private Socket socket;
-    TCPServerThread(Socket socket) {
+    private ImplementationBlockServer server;
+    TCPServerThread(ImplementationBlockServer server, Socket socket) {
+        this.server = server;
         this.socket = socket;
     }
 
 
     void run() {
         try {
-            ImplementationBlockServer server = new ImplementationBlockServer();
-            ObjectInputStream inFromClient=
-                    new ObjectInputStream(socket.getInputStream());
             ObjectOutputStream outToClient =
                     new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream inFromClient=
+                    new ObjectInputStream(socket.getInputStream());
+
             Message messageToClient = null;
             try {
                 Message messageFromClient = (Message) inFromClient.readObject();
@@ -91,16 +93,18 @@ class TCPServerThread {
                 }
             } catch (NoSuchAlgorithmException | IDMismatchException | InvalidKeyException
                     | WrongHeaderSequenceException | InvalidSignatureException | SignatureException
-                    | ClassNotFoundException e) {
+                    | ClassNotFoundException | IOException e) {
                 e.printStackTrace();
-                messageToClient = new Message.MessageBuilder(Message.MessageType.ERROR).error(e.toString()).createMessage();
+                messageToClient = new Message.MessageBuilder(Message.MessageType.ERROR)
+                        .error(e)
+                        .createMessage();
+            }finally {
+                //sends message with return to client
+                outToClient.writeObject(messageToClient);
+                inFromClient.close();
+                outToClient.close();
+                socket.close();
             }
-
-            //sends message with return to client
-            outToClient.writeObject(messageToClient);
-            inFromClient.close();
-            outToClient.close();
-            socket.close();
 
         } catch (IOException e) {
             e.printStackTrace();

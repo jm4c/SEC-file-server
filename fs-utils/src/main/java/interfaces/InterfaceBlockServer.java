@@ -8,24 +8,25 @@ import types.*;
 
 public interface InterfaceBlockServer extends Remote {
 	
-    public static final int BLOCK_MAX_SIZE = 4*1024; //4kB
-    public static final int REPLICAS = 3; //Number of Server Replicas
+    int BLOCK_MAX_SIZE = 4*1024; //4kB
+    int REPLICAS = 3; //Number of Server Replicas
+    int PORT = 1099;
     
     //Temporary greeting method for testing
-    public String greeting() throws Exception;
+    String greeting() throws Exception;
     
-    public List readPubKeys() throws Exception;
+    List readPubKeys() throws Exception;
     
-    public boolean storePubKey(Pk_t key) throws Exception;
+    boolean storePubKey(Pk_t key) throws Exception;
     
-    public boolean storePubKey(Certificate cert) throws Exception;
+    boolean storePubKey(Certificate cert) throws Exception;
     
-    public Data_t get(Id_t id) throws Exception;
+    Data_t get(Id_t id) throws Exception;
 
-    public Id_t getID(Pk_t pk) throws Exception;
+    Id_t getID(Pk_t pk) throws Exception;
     
-    public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws Exception;
+    Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws Exception;
 
-    public Id_t put_h(Data_t data) throws Exception;
+    Id_t put_h(Data_t data) throws Exception;
 
 }

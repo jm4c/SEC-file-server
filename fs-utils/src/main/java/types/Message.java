@@ -1,8 +1,9 @@
 package types;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class Message {
+public class Message implements Serializable{
 
     public enum MessageType {
         PUT_K, PUT_H, GET, GET_ID, STORE_PK, LIST_PK,
@@ -15,7 +16,7 @@ public class Message {
     private Sig_t signature;
     private Pk_t publicKey;
     private List publicKeyList;
-    private String errorMessage;
+    private Exception errorMessage;
 
 
     private Message(
@@ -25,7 +26,7 @@ public class Message {
             final Sig_t signature,
             final Pk_t publicKey,
             final List publicKeyList,
-            final String errorMessage )
+            final Exception errorMessage )
     {
         this.messageType = messageType;
         this.id = id;
@@ -62,7 +63,7 @@ public class Message {
         return this.publicKeyList;
     }
 
-    public String getErrorMessage(){
+    public Exception getException(){
         return this.errorMessage;
     }
 
@@ -74,7 +75,7 @@ public class Message {
         private Sig_t signature;
         private Pk_t publicKey;
         private List publicKeyList;
-        private String errorMessage;
+        private Exception errorMessage;
 
         public MessageBuilder (MessageType messageType){
             this.messageType = messageType;
@@ -104,7 +105,7 @@ public class Message {
             return this;
         }
 
-        public MessageBuilder error(String errorMessage){
+        public MessageBuilder error(Exception errorMessage){
             this.errorMessage = errorMessage;
             return this;
         }
