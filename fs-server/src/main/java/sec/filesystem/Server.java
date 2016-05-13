@@ -72,7 +72,7 @@ public class Server {
 
             //  (Java RMI) 
             //  Rebinding of the server object
-            ImplementationBlockServer obj = new ImplementationBlockServer();
+            ImplementationBlockServer obj = new ImplementationBlockServer(0);
             Naming.rebind("fs." + servername, obj);
 
             //  Writing the new server list to file

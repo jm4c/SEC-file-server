@@ -1,17 +1,23 @@
 package sec.filesystem;
 
 
+import blocks.PublicKeyBlock;
 import exceptions.IDMismatchException;
 import exceptions.InvalidSignatureException;
 import exceptions.WrongHeaderSequenceException;
 import types.*;
+import utils.CryptoUtils;
 
 import java.io.*;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.sql.Timestamp;
 import java.util.List;
+
+import static types.Message.*;
+import static types.Message.MessageType.*;
 
 class TCPServerThread {
     private Socket socket;
@@ -43,8 +49,9 @@ class TCPServerThread {
                     case PUT_H:
                         data = messageFromClient.getData();
                         id = server.put_h(data);
-                        messageToClient = new Message.MessageBuilder(Message.MessageType.RE_PUT)
+                        messageToClient = new MessageBuilder(ACK)
                                 .id(id)
+                                .timestamp(getTimestampFromFile(id))
                                 .createMessage();
                         break;
                     case PUT_K:
@@ -52,50 +59,55 @@ class TCPServerThread {
                         signature = messageFromClient.getSignature();
                         publicKey = messageFromClient.getPublicKey();
                         id = server.put_k(data, signature, publicKey);
-                        messageToClient = new Message.MessageBuilder(Message.MessageType.RE_PUT)
+                        messageToClient = new MessageBuilder(NC_ACK)
                                 .id(id)
+                                .timestamp(getTimestampFromFile(id))
                                 .createMessage();
                         break;
                     case GET:
                         id = messageFromClient.getID();
-                        data = server.get(id);
-                        messageToClient = new Message.MessageBuilder(Message.MessageType.RE_GET)
-                                .data(data)
-                                .createMessage();
+                        PublicKeyBlock pkb = getPublicKeyBlock(id);
+                        if (pkb != null){
+                            messageToClient = new MessageBuilder(VALUE)
+                                    .data(pkb.getData())
+                                    .signature(pkb.getSig())
+                                    .publicKey(pkb.getPKey())
+                                    .createMessage();
+                        }else {
+                            data = server.get(id);
+                            messageToClient = new MessageBuilder(ACK)
+                                    .data(data)
+                                    .createMessage();
+                        }
                         break;
                     case GET_ID:
                         publicKey = messageFromClient.getPublicKey();
                         id = server.getID(publicKey);
-
-                        //RE_PUT since this message only contains ID like all the other responses to put_k or put_h
-                        messageToClient = new Message.MessageBuilder(Message.MessageType.RE_PUT)
+                        messageToClient = new MessageBuilder(ACK)
                                 .id(id)
                                 .createMessage();
                         break;
                     case STORE_PK:
                         publicKey = messageFromClient.getPublicKey();
-                        if(server.storePubKey(publicKey))
-                            messageToClient = new Message.MessageBuilder(Message.MessageType.ACK)
-                                    .createMessage();
-                        else
-                            messageToClient = new Message.MessageBuilder(Message.MessageType.NACK)
-                                    .createMessage();
+                        server.storePubKey(publicKey);
+                        messageToClient = new MessageBuilder(ACK)
+                                .createMessage();
                         break;
                     case LIST_PK:
                         List publicKeyList = server.readPubKeys();
-                        messageToClient = new Message.MessageBuilder(Message.MessageType.RE_LIST_PK)
+                        messageToClient = new MessageBuilder(ACK)
                                 .list(publicKeyList)
                                 .createMessage();
                         break;
                     default:
-                        System.out.println("Hello! Not a valid message type.");
+                        System.out.println(messageFromClient.getMessageType().toString() + "is not a valid message type.");
 
                 }
             } catch (NoSuchAlgorithmException | IDMismatchException | InvalidKeyException
                     | WrongHeaderSequenceException | InvalidSignatureException | SignatureException
                     | ClassNotFoundException | IOException e) {
                 e.printStackTrace();
-                messageToClient = new Message.MessageBuilder(Message.MessageType.ERROR)
+                messageToClient = new MessageBuilder(ERROR)
                         .error(e)
                         .createMessage();
             }finally {
@@ -110,6 +122,23 @@ class TCPServerThread {
             e.printStackTrace();
         }
 
+    }
+
+    private Timestamp getTimestampFromFile(Id_t id) throws IOException, ClassNotFoundException, InvalidKeyException, InvalidSignatureException, NoSuchAlgorithmException, SignatureException, IDMismatchException {
+        return ((Header_t) CryptoUtils.deserialize(server.get(id).getValue())).getTimestamp();
+    }
+
+    private PublicKeyBlock getPublicKeyBlock(Id_t id) throws IOException, ClassNotFoundException {
+        String s = id.getValue();
+        FileInputStream fin;
+        fin = new FileInputStream("./files/server" + server.getServerID() + "/" + s + ".dat");
+        ObjectInputStream ois = new ObjectInputStream(fin);
+        Object obj = ois.readObject();
+        if (obj instanceof PublicKeyBlock) {
+            return (PublicKeyBlock) obj;
+
+        }
+        return null;
     }
 }
 

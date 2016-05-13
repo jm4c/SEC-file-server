@@ -21,7 +21,7 @@ public class TCPServer {
                 ImplementationBlockServer server = null;
                 ServerSocket serverSocket = null;
                 try {
-                    server = new ImplementationBlockServer();
+                    server = new ImplementationBlockServer(port-PORT);
                     serverSocket = new ServerSocket(port);
                 } catch (IOException e) {
                     e.printStackTrace();

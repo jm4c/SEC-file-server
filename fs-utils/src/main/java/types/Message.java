@@ -1,13 +1,14 @@
 package types;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.List;
 
 public class Message implements Serializable{
 
     public enum MessageType {
         PUT_K, PUT_H, GET, GET_ID, STORE_PK, LIST_PK,
-        RE_PUT, RE_GET, ACK, NACK, RE_LIST_PK, ERROR
+        VALUE, ACK, ERROR, NC_ACK /*not confirmed ACK*/
     }
 
     private MessageType messageType;
@@ -16,6 +17,7 @@ public class Message implements Serializable{
     private Sig_t signature;
     private Pk_t publicKey;
     private List publicKeyList;
+    private Timestamp timestamp;
     private Exception errorMessage;
 
 
@@ -26,6 +28,7 @@ public class Message implements Serializable{
             final Sig_t signature,
             final Pk_t publicKey,
             final List publicKeyList,
+            final Timestamp timestamp,
             final Exception errorMessage )
     {
         this.messageType = messageType;
@@ -33,8 +36,8 @@ public class Message implements Serializable{
         this.data = data;
         this.signature = signature;
         this.publicKey = publicKey;
-        //TODO HMAC instead of publicKey and signature?
         this.publicKeyList = publicKeyList;
+        this.timestamp = timestamp;
         this.errorMessage = errorMessage;
     }
 
@@ -63,6 +66,14 @@ public class Message implements Serializable{
         return this.publicKeyList;
     }
 
+    public void setMessageType(MessageType messageType){
+        this.messageType=messageType;
+    }
+
+    public Timestamp getTimestamp() {
+        return this.timestamp;
+    }
+
     public Exception getException(){
         return this.errorMessage;
     }
@@ -75,6 +86,7 @@ public class Message implements Serializable{
         private Sig_t signature;
         private Pk_t publicKey;
         private List publicKeyList;
+        private Timestamp timestamp;
         private Exception errorMessage;
 
         public MessageBuilder (MessageType messageType){
@@ -105,6 +117,11 @@ public class Message implements Serializable{
             return this;
         }
 
+        public MessageBuilder timestamp(Timestamp timestamp){
+            this.timestamp = timestamp;
+            return this;
+        }
+
         public MessageBuilder error(Exception errorMessage){
             this.errorMessage = errorMessage;
             return this;
@@ -112,7 +129,7 @@ public class Message implements Serializable{
 
         public Message createMessage()
         {
-            return new Message(messageType, id, data, signature, publicKey, publicKeyList, errorMessage);
+            return new Message(messageType, id, data, signature, publicKey, publicKeyList, timestamp, errorMessage);
 
         }
     }

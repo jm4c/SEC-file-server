@@ -31,10 +31,12 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     private static final long serialVersionUID = 1L;
     private final List<Pk_t> pKeyList;
     private final List<Certificate> certList;
+    private int serverID;
 
-    public ImplementationBlockServer() throws RemoteException {
+    public ImplementationBlockServer(int serverID) throws RemoteException {
         pKeyList = new ArrayList<>();
         certList = new ArrayList<>();
+        this.serverID=serverID;
     }
 
     private boolean verifyIntegrity(PublicKeyBlock b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
@@ -117,11 +119,11 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         // Main/Header block
         String s = id.getValue();
         FileInputStream fin;
-        fin = new FileInputStream("./files/" + s + ".dat");
+        fin = new FileInputStream("./files/server" + serverID + "/" + s + ".dat");
         ObjectInputStream ois = new ObjectInputStream(fin);
         Object obj = ois.readObject();
         if (obj instanceof PublicKeyBlock) {
-            System.out.println("\nGot header from:./files/" + s + ".dat");
+            System.out.println("\nGot header from:./files/server" + serverID + "/" + s + ".dat");
             b = (PublicKeyBlock) obj;
             ois.close();
             if (!verifyIntegrity(b)) {
@@ -131,7 +133,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
             }
             return b.getData();
         } else {
-            System.out.println("Got content from:./files/" + s + ".dat");
+            System.out.println("Got content from:./files/server" + serverID + "/" + s + ".dat");
             Data_t data = (Data_t) obj;
             ois.close();
             String blockID = calculateBlockID(data).getValue();
@@ -145,9 +147,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     @Override
     public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, InvalidSignatureException, IOException, ClassNotFoundException, IDMismatchException, WrongHeaderSequenceException {
 
-        if (!CryptoUtils.verify(data.getValue(), public_key.getValue(), signature.getValue())) {
-            throw new InvalidSignatureException("Invalid signature.");
-        }
+        verifySignedData(data, signature, public_key);
         System.out.println("signature is valid");
 
         Id_t id = calculateBlockID(public_key);
@@ -160,9 +160,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         }
         //check timestamp, in order to defend against replay attacks
         if (headerAlreadyExists) {
-            Timestamp oldTimestamp = ((Header_t) CryptoUtils.deserialize(get(id).getValue())).getTimestamp();
+            Timestamp oldTimestamp = getTimestampFromFileByID(id);
             System.out.println("OLD: " + oldTimestamp.toString());
-            Timestamp newTimestamp = ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
+            Timestamp newTimestamp = getTimestampFromData(data);
             System.out.println("NEW: " + newTimestamp.toString());
             if (!newTimestamp.after(oldTimestamp)) {
                 throw new WrongHeaderSequenceException("New header's timestamp: "
@@ -177,9 +177,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         PublicKeyBlock b = new PublicKeyBlock(data, signature, public_key);
 
         String s = id.getValue();
-        new File("./files/").mkdirs();
-        FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
-        System.out.println("Stored header in:./files/" + s + ".dat");
+        new File("./files/server" + serverID + "/").mkdirs();
+        FileOutputStream fout = new FileOutputStream("./files/server" + serverID + "/" + s + ".dat");
+        System.out.println("Stored header in:./files/server" + serverID + "/" + s + ".dat");
 
         ObjectOutputStream oos = new ObjectOutputStream(fout);
         oos.writeObject(b);
@@ -188,13 +188,27 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         return id;
     }
 
+    private void verifySignedData(Data_t data, Sig_t signature, Pk_t public_key) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, InvalidSignatureException {
+        if (!CryptoUtils.verify(data.getValue(), public_key.getValue(), signature.getValue())) {
+            throw new InvalidSignatureException("Invalid signature.");
+        }
+    }
+
+    private Timestamp getTimestampFromData(Data_t data) throws IOException, ClassNotFoundException {
+        return ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
+    }
+
+    private Timestamp getTimestampFromFileByID(Id_t id) throws IOException, ClassNotFoundException, InvalidKeyException, InvalidSignatureException, NoSuchAlgorithmException, SignatureException, IDMismatchException {
+        return getTimestampFromData(get(id));
+    }
+
     @Override
     public Id_t put_h(Data_t data) throws NoSuchAlgorithmException, IOException {
         Id_t id = calculateBlockID(data);
         String s = id.getValue();
-        new File("./files/").mkdirs();
-        FileOutputStream fout = new FileOutputStream("./files/" + s + ".dat");
-        System.out.println("Stored content in:./files/" + s + ".dat");
+        new File("./files/server" + serverID + "/").mkdirs();
+        FileOutputStream fout = new FileOutputStream("./files/server" + serverID + "/" + s + ".dat");
+        System.out.println("Stored content in:./files/server" + serverID + "/" + s + ".dat");
 
         ObjectOutputStream oos = new ObjectOutputStream(fout);
         oos.writeObject(data);
@@ -213,5 +227,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         Id_t id;
         id = calculateBlockID(pk);
         return id;
+    }
+
+    public int getServerID(){
+        return this.serverID;
     }
 }
