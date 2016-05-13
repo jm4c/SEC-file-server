@@ -7,9 +7,6 @@ import types.Id_t;
 import utils.CryptoUtils;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,7 +51,7 @@ public class DemoReadCorruptContent {
             //Library c = new Library();
             TCPClient c = new TCPClient();
             Buffer_t buffer = new Buffer_t(CryptoUtils.serialize(""));
-            
+
             // Initializing the file system
             System.out.println("// [1] Initializing the File System ...");
             swapOutStream("disable", args);
@@ -84,8 +81,8 @@ public class DemoReadCorruptContent {
             // Manually altering one of the content data files.
             swapOutStream("disable", args);
             List<Id_t> list = (List<Id_t>) c.getFileList();
-            for (int i = 0; i< REPLICAS; i++) {
-                final String path = "./../fs-server/files/server" + i + "/" + list.get(0).getValue()+".dat";
+            for (int i = 0; i < REPLICAS; i++) {
+                final String path = "./../fs-server/files/server" + i + "/" + list.get(0).getValue() + ".dat";
                 FileInputStream fin = new FileInputStream(path);
                 ObjectInputStream ois = new ObjectInputStream(fin);
                 Object obj = ois.readObject();
@@ -101,7 +98,7 @@ public class DemoReadCorruptContent {
             }
 
             swapOutStream("enable", args);
-            
+
             // Reading all the data that was just written to the file
             System.out.println("// [5] Performing a read request ...");
             System.out.println("// [5] Reading the data that was just written to the file ...");
@@ -111,7 +108,7 @@ public class DemoReadCorruptContent {
             swapOutStream("enable", args);
             System.out.println("// [ ] DemoApp has INCORRECTLY terminated.");
             System.exit(-1);
-            
+
         } catch (IDMismatchException ex) {
             swapOutStream("enable", args);
             System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());

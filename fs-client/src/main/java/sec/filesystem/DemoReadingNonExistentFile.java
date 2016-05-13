@@ -1,6 +1,5 @@
 package sec.filesystem;
 
-import interfaces.InterfaceBlockServer;
 import types.Buffer_t;
 import utils.CryptoUtils;
 
@@ -82,7 +81,7 @@ public class DemoReadingNonExistentFile {
             swapOutStream("disable", args);
 
             // TODO BUG - CANT REMOVE DUE TO FILE BEING CURRENTLY IN USE
-            for (int i = 0; i< REPLICAS; i++) {
+            for (int i = 0; i < REPLICAS; i++) {
                 final Path path = Paths.get("./../fs-server/files/server" + i + "/" + c.getClientID().getValue() + ".dat");
                 Files.delete(path);
             }
@@ -98,7 +97,7 @@ public class DemoReadingNonExistentFile {
             swapOutStream("enable", args);
             System.out.println("// [ ] DemoApp has INCORRECTLY terminated.");
             System.exit(-1);
-            
+
         } catch (FileNotFoundException ex) {
             swapOutStream("enable", args);
             System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());

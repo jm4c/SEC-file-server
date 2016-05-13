@@ -1,6 +1,6 @@
 package exceptions;
 
-public class TCPServerException extends  Exception{
+public class TCPServerException extends Exception {
     private static final long serialVersionUID = 1L;
 
     public TCPServerException() {

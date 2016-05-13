@@ -27,18 +27,14 @@ import java.util.List;
 
 public class Library {
 
+    private static final String SERVERLISTPATH = "../fs-utils/serverlist.dat";
+    protected static InterfaceBlockServer server;
     private boolean smartcardSupport = true;
-
     private PrivateKey privateKey;
     private Pk_t publicKey;
     private Id_t clientID;
-
     private long p11_session;
     private PKCS11 pkcs11;
-
-    protected static InterfaceBlockServer server;
-    private static final String SERVERLISTPATH = "../fs-utils/serverlist.dat";
-
     private List fileList;
 
     protected Library() {
@@ -53,14 +49,6 @@ public class Library {
         return smartcardSupport;
     }
 
-    protected void setClientID(Id_t headerID) throws NoSuchAlgorithmException, IOException {
-        this.clientID = headerID;
-    }
-
-    protected void setPrivateKey(KeyPair kp) {
-        this.privateKey = kp.getPrivate();
-    }
-
     protected void setPublicKey(Pk_t key) {
         this.publicKey = key;
     }
@@ -69,28 +57,36 @@ public class Library {
         this.publicKey = new Pk_t(kp.getPublic());
     }
 
-    protected void setPublicKey(X509Certificate cert) {
-        this.publicKey = new Pk_t(cert.getPublicKey());
-    }
-
     protected Id_t getClientID() {
         return clientID;
+    }
+
+    protected void setClientID(Id_t headerID) throws NoSuchAlgorithmException, IOException {
+        this.clientID = headerID;
     }
 
     private PrivateKey getPrivateKey() {
         return privateKey;
     }
 
+    protected void setPrivateKey(KeyPair kp) {
+        this.privateKey = kp.getPrivate();
+    }
+
     protected Pk_t getPublicKey() {
         return publicKey;
     }
 
-    private void setFileList(List l) {
-        fileList = l;
+    protected void setPublicKey(X509Certificate cert) {
+        this.publicKey = new Pk_t(cert.getPublicKey());
     }
 
     protected List getFileList() {
         return fileList;
+    }
+
+    private void setFileList(List l) {
+        fileList = l;
     }
 
     private byte[][] splitContent(Buffer_t content) {

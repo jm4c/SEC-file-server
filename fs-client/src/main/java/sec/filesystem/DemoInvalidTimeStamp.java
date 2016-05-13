@@ -28,6 +28,7 @@ import java.util.logging.Logger;
  */
 public class DemoInvalidTimeStamp {
 
+    private final static int PORT = 1099;
     static PrintStream dummyStream = new PrintStream(new OutputStream() {
         @Override
         public void write(int b) {
@@ -35,6 +36,8 @@ public class DemoInvalidTimeStamp {
         }
     });
     static PrintStream originalStream = System.out;
+    //private static Library c;
+    private static TCPClient c;
 
     private static void swapOutStream(String mode, String[] in) {
         if (mode.equalsIgnoreCase("enable")) {
@@ -50,10 +53,6 @@ public class DemoInvalidTimeStamp {
             }
         }
     }
-
-    //private static Library c;
-    private static TCPClient c;
-    private final static int PORT = 1099;
 
     public static void main(String[] args) {
         try {
@@ -155,8 +154,8 @@ public class DemoInvalidTimeStamp {
             //id = server.put_k(headerData, signature, c.getPublicKey());
             //TCP
             Message response = sendMessageToServer(new Message.MessageBuilder(Message.MessageType.PUT_K)
-                            .data(headerData).signature(signature).publicKey(c.getPublicKey())
-                            .createMessage());
+                    .data(headerData).signature(signature).publicKey(c.getPublicKey())
+                    .createMessage());
             id = response.getID();
 
             //server.storePubKey(c.getPublicKey());

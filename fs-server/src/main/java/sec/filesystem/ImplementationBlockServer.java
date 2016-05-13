@@ -1,30 +1,28 @@
 package sec.filesystem;
 
 import blocks.PublicKeyBlock;
+import eIDlib_PKCS11.EIDLib_PKCS11;
 import exceptions.IDMismatchException;
+import exceptions.InvalidSignatureException;
+import exceptions.RevokedCertificateException;
+import exceptions.WrongHeaderSequenceException;
 import interfaces.InterfaceBlockServer;
+import types.*;
+import utils.CryptoUtils;
+import utils.HashUtils;
 
 import java.io.*;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.SignatureException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
-
-import exceptions.InvalidSignatureException;
-import exceptions.RevokedCertificateException;
-import exceptions.WrongHeaderSequenceException;
-import java.security.PublicKey;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-
-import types.*;
-import utils.HashUtils;
-import utils.CryptoUtils;
-import eIDlib_PKCS11.EIDLib_PKCS11;
 
 public class ImplementationBlockServer extends UnicastRemoteObject implements InterfaceBlockServer {
 
@@ -36,7 +34,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     public ImplementationBlockServer(int serverID) throws RemoteException {
         pKeyList = new ArrayList<>();
         certList = new ArrayList<>();
-        this.serverID=serverID;
+        this.serverID = serverID;
     }
 
     private boolean verifyIntegrity(PublicKeyBlock b) throws InvalidKeyException, NoSuchAlgorithmException, SignatureException {
@@ -94,7 +92,8 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         if (!EIDLib_PKCS11.isCertificateValid((X509Certificate) cert)) {
             certList.remove(cert);
             throw new RevokedCertificateException("Certificate has been revoked by its certification authority");
-        };
+        }
+        ;
         boolean certExists = certList.contains(cert);
         if (!certExists) {
             certList.add(cert);
@@ -123,17 +122,17 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         ObjectInputStream ois = new ObjectInputStream(fin);
         Object obj = ois.readObject();
         if (obj instanceof PublicKeyBlock) {
-            System.out.println("\n[Server" + serverID+"] Got header from:./files/server" + serverID + "/" + s + ".dat");
+            System.out.println("\n[Server" + serverID + "] Got header from:./files/server" + serverID + "/" + s + ".dat");
             b = (PublicKeyBlock) obj;
             ois.close();
             if (!verifyIntegrity(b)) {
                 throw new InvalidSignatureException("Invalid signature.");
             } else {
-                System.out.println("[Server" + serverID+"] Valid signature");
+                System.out.println("[Server" + serverID + "] Valid signature");
             }
             return b.getData();
         } else {
-            System.out.println("[Server" + serverID+"] Got content from:./files/server" + serverID + "/" + s + ".dat");
+            System.out.println("[Server" + serverID + "] Got content from:./files/server" + serverID + "/" + s + ".dat");
             Data_t data = (Data_t) obj;
             ois.close();
             String blockID = calculateBlockID(data).getValue();
@@ -148,7 +147,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, InvalidSignatureException, IOException, ClassNotFoundException, IDMismatchException, WrongHeaderSequenceException {
 
         verifySignedData(data, signature, public_key);
-        System.out.println("[Server" + serverID+"] signature is valid");
+        System.out.println("[Server" + serverID + "] signature is valid");
 
         Id_t id = calculateBlockID(public_key);
 
@@ -161,9 +160,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         //check timestamp, in order to defend against replay attacks
         if (headerAlreadyExists) {
             Timestamp oldTimestamp = getTimestampFromFileByID(id);
-            System.out.println("[Server" + serverID+"] OLD: " + oldTimestamp.toString());
+            System.out.println("[Server" + serverID + "] OLD: " + oldTimestamp.toString());
             Timestamp newTimestamp = getTimestampFromData(data);
-            System.out.println("[Server" + serverID+"] NEW: " + newTimestamp.toString());
+            System.out.println("[Server" + serverID + "] NEW: " + newTimestamp.toString());
             if (!newTimestamp.after(oldTimestamp)) {
                 throw new WrongHeaderSequenceException("New header's timestamp: "
                         + newTimestamp.toString() + "\n"
@@ -179,7 +178,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         String s = id.getValue();
         new File("./files/server" + serverID + "/").mkdirs();
         FileOutputStream fout = new FileOutputStream("./files/server" + serverID + "/" + s + ".dat");
-        System.out.println("[Server" + serverID+"] Stored header in:./files/server" + serverID + "/" + s + ".dat");
+        System.out.println("[Server" + serverID + "] Stored header in:./files/server" + serverID + "/" + s + ".dat");
 
         ObjectOutputStream oos = new ObjectOutputStream(fout);
         oos.writeObject(b);
@@ -208,7 +207,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         String s = id.getValue();
         new File("./files/server" + serverID + "/").mkdirs();
         FileOutputStream fout = new FileOutputStream("./files/server" + serverID + "/" + s + ".dat");
-        System.out.println("[Server" + serverID+"] Stored content in:./files/server" + serverID + "/" + s + ".dat");
+        System.out.println("[Server" + serverID + "] Stored content in:./files/server" + serverID + "/" + s + ".dat");
 
         ObjectOutputStream oos = new ObjectOutputStream(fout);
         oos.writeObject(data);
@@ -229,7 +228,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         return id;
     }
 
-    public int getServerID(){
+    public int getServerID() {
         return this.serverID;
     }
 }

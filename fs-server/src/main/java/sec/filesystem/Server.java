@@ -1,11 +1,6 @@
 package sec.filesystem;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
@@ -81,7 +76,7 @@ public class Server {
             oos.writeObject(serverList);
 
             System.out.println("FileSystem." + servername + " is ready...");
-            
+
             // Closing all open resources
             oos.close();
             ois.close();

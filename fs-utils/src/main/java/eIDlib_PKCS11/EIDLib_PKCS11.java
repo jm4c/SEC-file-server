@@ -3,30 +3,13 @@ package eIDlib_PKCS11;
 import pteidlib.PTEID_Certif;
 import pteidlib.PteidException;
 import pteidlib.pteid;
-
-import sun.security.pkcs11.wrapper.CK_ATTRIBUTE;
-import sun.security.pkcs11.wrapper.CK_C_INITIALIZE_ARGS;
-import sun.security.pkcs11.wrapper.CK_MECHANISM;
-import sun.security.pkcs11.wrapper.PKCS11;
-import sun.security.pkcs11.wrapper.PKCS11Constants;
+import sun.security.pkcs11.wrapper.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.lang.reflect.Method;
-import java.security.cert.CertPath;
-import java.security.cert.CertPathBuilder;
-import java.security.cert.CertPathBuilderResult;
-import java.security.cert.CertPathValidator;
-import java.security.cert.CertPathValidatorResult;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.PKIXBuilderParameters;
-import java.security.cert.PKIXRevocationChecker;
-import java.security.cert.TrustAnchor;
-import java.security.cert.X509CertSelector;
-import java.security.cert.X509Certificate;
+import java.security.cert.*;
 import java.security.cert.PKIXRevocationChecker.Option;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -62,7 +45,7 @@ public class EIDLib_PKCS11 {
             pkcs11 = (PKCS11) getInstanceMethode.invoke(null, new Object[]{libName, "C_GetFunctionList", null, false});
         }
         System.out.println("    //Done!\n");
-        
+
         return pkcs11;
     }
 
@@ -97,7 +80,7 @@ public class EIDLib_PKCS11 {
         System.out.println("    //Done!\n");
         return p11_session;
     }
-        
+
     // Closes the EIDLib. MUST be called after use
     public static void closeLib(PKCS11 pkcs11, long p11_session) throws Exception {
         System.out.println("    //Closing the PKCS11 session ...");
@@ -133,35 +116,33 @@ public class EIDLib_PKCS11 {
         X509Certificate cert = (X509Certificate) f.generateCertificate(in);
         return cert;
     }
-    
-    public static boolean isCertificateValid(X509Certificate cert){
-    	try
-        {
-            
-        System.out.println("            //Load the PTEidlibj");
 
-        System.loadLibrary("pteidlibj");
-        pteid.Init(""); // Initializes the eID Lib
-        pteid.SetSODChecking(false); // Don't check the integrity of the ID, address and photo (!)
+    public static boolean isCertificateValid(X509Certificate cert) {
+        try {
 
-        
-        
-        PKCS11 pkcs11;
-        String osName = System.getProperty("os.name");
-        String javaVersion = System.getProperty("java.version");
-        System.out.println("Java version: " + javaVersion);
-    
-        java.util.Base64.Encoder encoder = java.util.Base64.getEncoder();
-     
+            System.out.println("            //Load the PTEidlibj");
+
+            System.loadLibrary("pteidlibj");
+            pteid.Init(""); // Initializes the eID Lib
+            pteid.SetSODChecking(false); // Don't check the integrity of the ID, address and photo (!)
+
+
+            PKCS11 pkcs11;
+            String osName = System.getProperty("os.name");
+            String javaVersion = System.getProperty("java.version");
+            System.out.println("Java version: " + javaVersion);
+
+            java.util.Base64.Encoder encoder = java.util.Base64.getEncoder();
+
             String libName = "libbeidpkcs11.so";
-            
+
             // access the ID and Address data via the pteidlib
 //            System.out.println("Citized Authentication Certificate "+cert);
-            System.out.println("===>Issuer: "+cert.getIssuerX500Principal().getName());
-            
+            System.out.println("===>Issuer: " + cert.getIssuerX500Principal().getName());
+
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            
-            
+
+
             String issuerID = cert.getIssuerX500Principal().getName().substring(43, 47);
             System.out.println("Issuer ID = " + issuerID);
             FileInputStream in = new FileInputStream("./authcerts/EC de Autenticacao do Cartao de Cidadao " + issuerID + ".cer");
@@ -171,27 +152,27 @@ public class EIDLib_PKCS11 {
             TrustAnchor anchor = new TrustAnchor((X509Certificate) trust, null);
             Set<TrustAnchor> trustAnchors = new HashSet<TrustAnchor>();
             trustAnchors.add(anchor);
-            
+
             X509CertSelector certSelector = new X509CertSelector();
             certSelector.setCertificate(cert);
 
-        
-            PKIXBuilderParameters params=new PKIXBuilderParameters(trustAnchors, certSelector);
+
+            PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, certSelector);
             CertPathBuilder cpb = CertPathBuilder.getInstance("PKIX");
             
             /* Enable usage of revocation lists */
-            PKIXRevocationChecker rc = (PKIXRevocationChecker)cpb.getRevocationChecker();
+            PKIXRevocationChecker rc = (PKIXRevocationChecker) cpb.getRevocationChecker();
             rc.setOptions(EnumSet.of(Option.PREFER_CRLS));
             params.addCertPathChecker(rc);
-            
+
 
             CertPathBuilderResult cpbr = cpb.build(params);
-            System.out.println("CertPathBuilderResult"+cpbr);
-            
+            System.out.println("CertPathBuilderResult" + cpbr);
+
             System.out.println("****************************");
             
             /* Now Validate the Certificate Path */
-            
+
             CertPath cp = cpbr.getCertPath();
             CertPathValidator cpv = CertPathValidator.getInstance("PKIX");
             CertPathValidatorResult cpvr = cpv.validate(cp, params);
@@ -199,17 +180,16 @@ public class EIDLib_PKCS11 {
             /* If no exception is generated here, it means that validation was successful */
             System.out.println("Validation successful");
             return true;
-                    
+
 //            pteid.Exit(pteid.PTEID_EXIT_LEAVE_CARD); //OBRIGATORIO Termina a eID Lib
 
-        }  catch (Throwable e)
-        {
+        } catch (Throwable e) {
             System.err.println("[Catch] Exception: " + e.getMessage());
             e.printStackTrace();
             return false;
-            
+
         }
-    	
+
     }
 
 }

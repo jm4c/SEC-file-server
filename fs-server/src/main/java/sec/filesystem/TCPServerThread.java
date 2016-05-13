@@ -8,7 +8,10 @@ import exceptions.WrongHeaderSequenceException;
 import types.*;
 import utils.CryptoUtils;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -16,12 +19,13 @@ import java.security.SignatureException;
 import java.sql.Timestamp;
 import java.util.List;
 
-import static types.Message.*;
+import static types.Message.MessageBuilder;
 import static types.Message.MessageType.*;
 
 class TCPServerThread {
     private Socket socket;
     private ImplementationBlockServer server;
+
     TCPServerThread(ImplementationBlockServer server, Socket socket) {
         this.server = server;
         this.socket = socket;
@@ -32,7 +36,7 @@ class TCPServerThread {
         try {
             ObjectOutputStream outToClient =
                     new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream inFromClient=
+            ObjectInputStream inFromClient =
                     new ObjectInputStream(socket.getInputStream());
 
             Message messageToClient = null;
@@ -66,13 +70,13 @@ class TCPServerThread {
                     case GET:
                         id = messageFromClient.getID();
                         PublicKeyBlock pkb = getPublicKeyBlock(id);
-                        if (pkb != null){
+                        if (pkb != null) {
                             messageToClient = new MessageBuilder(VALUE)
                                     .data(pkb.getData())
                                     .signature(pkb.getSig())
                                     .publicKey(pkb.getPKey())
                                     .createMessage();
-                        }else {
+                        } else {
                             data = server.get(id);
                             messageToClient = new MessageBuilder(ACK)
                                     .data(data)
@@ -109,7 +113,7 @@ class TCPServerThread {
                 messageToClient = new MessageBuilder(ERROR)
                         .error(e)
                         .createMessage();
-            }finally {
+            } finally {
                 //sends message with return to client
                 outToClient.writeObject(messageToClient);
                 inFromClient.close();

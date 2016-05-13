@@ -16,14 +16,14 @@ import java.util.concurrent.CountDownLatch;
 
 import static types.Message.MessageType.ACK;
 
-public class SendMessageThread implements Runnable{
+public class SendMessageThread implements Runnable {
     private Message messageToServer;
     private Message messageFromServer;
     private int port;
     private CountDownLatch countdownMajority;
 
 
-    protected SendMessageThread(Message messageToServer, int port, CountDownLatch countdownMajority){
+    protected SendMessageThread(Message messageToServer, int port, CountDownLatch countdownMajority) {
         this.messageToServer = messageToServer;
         this.port = port;
         this.countdownMajority = countdownMajority;
@@ -37,9 +37,9 @@ public class SendMessageThread implements Runnable{
 
             // not confirmed ACK, must test timestamps first (WRITE HEADER FILE)
 
-            switch (messageFromServer.getMessageType()){
+            switch (messageFromServer.getMessageType()) {
                 case NC_ACK: //WRITE HEADER FILE
-                    if(getTimestampFromData(messageToServer.getData()).equals(messageFromServer.getTimestamp()))
+                    if (getTimestampFromData(messageToServer.getData()).equals(messageFromServer.getTimestamp()))
                         messageFromServer.setMessageType(ACK);
                     else
                         throw new WrongHeaderSequenceException("Invalid timestamp");
@@ -54,10 +54,10 @@ public class SendMessageThread implements Runnable{
             }
 
 
-            if(messageFromServer.getMessageType().equals(ACK))
+            if (messageFromServer.getMessageType().equals(ACK))
                 countdownMajority.countDown(); //valid ACK
             else
-                throw new TCPServerException("MessageType not an ACK [" + messageFromServer.getMessageType().toString() +"]");
+                throw new TCPServerException("MessageType not an ACK [" + messageFromServer.getMessageType().toString() + "]");
         } catch (Exception e) {
             System.err.println(e.getClass().getName());
             messageFromServer = new Message.MessageBuilder(MessageType.ERROR)
@@ -70,7 +70,7 @@ public class SendMessageThread implements Runnable{
         return ((Header_t) CryptoUtils.deserialize(data.getValue())).getTimestamp();
     }
 
-    protected Message getMessageFromServer(){
+    protected Message getMessageFromServer() {
         return messageFromServer;
     }
 

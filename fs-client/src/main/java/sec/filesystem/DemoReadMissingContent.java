@@ -1,6 +1,5 @@
 package sec.filesystem;
 
-import interfaces.InterfaceBlockServer;
 import types.Buffer_t;
 import types.Id_t;
 import utils.CryptoUtils;
@@ -85,7 +84,7 @@ public class DemoReadMissingContent {
 
             // Manually getting rid of one of the content data files.
             List<Id_t> list = (List<Id_t>) c.getFileList();
-            for (int i = 0; i< REPLICAS; i++) {
+            for (int i = 0; i < REPLICAS; i++) {
                 final Path path = Paths.get("./../fs-server/files/server" + i + "/" + list.get(0).getValue() + ".dat");
                 Files.delete(path);
             }

@@ -41,7 +41,7 @@ public class DemoExpiredCertificate {
                     System.setOut(originalStream);
                 }
             }
-        } 
+        }
     }
 
     public static void main(String[] args) {

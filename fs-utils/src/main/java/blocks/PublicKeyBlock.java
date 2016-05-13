@@ -1,16 +1,17 @@
 package blocks;
 
-import java.io.Serializable;
 import types.Data_t;
 import types.Pk_t;
 import types.Sig_t;
 
+import java.io.Serializable;
+
 public class PublicKeyBlock implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    private final Data_t blockData;
     private Pk_t blockPKey;
     private Sig_t blockSig;
-    private final Data_t blockData;
 
     public PublicKeyBlock(Data_t data) {
         this.blockData = data;

@@ -9,7 +9,7 @@ public class HashUtils {
     public static byte[] hash(String msg, byte[] salt) throws NoSuchAlgorithmException, IOException {
 
         MessageDigest md = MessageDigest.getInstance("MD5");
-        
+
         if (salt != null) {
             md.update(salt);
         }
@@ -19,11 +19,11 @@ public class HashUtils {
 
         return hash;
     }
-    
+
     public static byte[] hash(byte[] data, byte[] salt) throws NoSuchAlgorithmException, IOException {
 
         MessageDigest md = MessageDigest.getInstance("MD5");
-        
+
         if (salt != null) {
             md.update(salt);
         }
