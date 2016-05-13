@@ -1,5 +1,6 @@
 package sec.filesystem;
 
+import exceptions.MajorityQuorumTimeoutException;
 import exceptions.WrongHeaderSequenceException;
 import interfaces.InterfaceBlockServer;
 import types.*;
@@ -15,8 +16,14 @@ import java.security.PrivateKey;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static interfaces.InterfaceBlockServer.REPLICAS;
+import static types.Message.MessageType.ACK;
+import static types.Message.MessageType.ERROR;
 
 
 /*  Demo Class used for demonstrating a client connecting to the File Server, 
@@ -138,7 +145,7 @@ public class DemoInvalidTimeStamp {
 
 
         //REPLICA CODE BLOCK
-        for (int i = 0; i < InterfaceBlockServer.REPLICAS; i++) {
+        for (int i = 0; i < REPLICAS; i++) {
             //Registry myReg = LocateRegistry.getRegistry("localhost");
             System.out.println("Contacting server-" + i);
 //            try {
@@ -153,38 +160,78 @@ public class DemoInvalidTimeStamp {
             System.out.println("DATA SENT (empty header): " + header.toString() + "\n");
             //id = server.put_k(headerData, signature, c.getPublicKey());
             //TCP
-            Message response = sendMessageToServer(new Message.MessageBuilder(Message.MessageType.PUT_K)
+            Message response = broadcastMessageToServers(new Message.MessageBuilder(Message.MessageType.PUT_K)
                     .data(headerData).signature(signature).publicKey(c.getPublicKey())
                     .createMessage());
             id = response.getID();
 
             //server.storePubKey(c.getPublicKey());
             //TCP
-            sendMessageToServer(new Message.MessageBuilder(Message.MessageType.STORE_PK)
+            broadcastMessageToServers(new Message.MessageBuilder(Message.MessageType.STORE_PK)
                     .publicKey(c.getPublicKey())
                     .createMessage());
         }
         return id;
     }
 
-    private static Message sendMessageToServer(Message messageToServer) throws Exception {
-        Message messageFromServer;
-        Socket clientSocket = new Socket("localhost", PORT);
-        ObjectOutputStream outToServer =
-                new ObjectOutputStream(clientSocket.getOutputStream());
-        ObjectInputStream inFromServer =
-                new ObjectInputStream(clientSocket.getInputStream());
-        outToServer.writeObject(messageToServer);
-        messageFromServer = (Message) inFromServer.readObject();
+//    private static Message sendMessageToServer(Message messageToServer) throws Exception {
+//        Message messageFromServer;
+//        Socket clientSocket = new Socket("localhost", PORT);
+//        ObjectOutputStream outToServer =
+//                new ObjectOutputStream(clientSocket.getOutputStream());
+//        ObjectInputStream inFromServer =
+//                new ObjectInputStream(clientSocket.getInputStream());
+//        outToServer.writeObject(messageToServer);
+//        messageFromServer = (Message) inFromServer.readObject();
+//
+//        if (messageFromServer.getMessageType().equals(Message.MessageType.ERROR))
+//            throw messageFromServer.getException();
+//
+//        inFromServer.close();
+//        outToServer.close();
+//        clientSocket.close();
+//
+//        return messageFromServer;
+//    }
 
-        if (messageFromServer.getMessageType().equals(Message.MessageType.ERROR))
-            throw messageFromServer.getException();
 
-        inFromServer.close();
-        outToServer.close();
-        clientSocket.close();
+    private static Message broadcastMessageToServers(Message messageToServer) throws Exception {
+        int majority = REPLICAS / 2 + 1;
 
-        return messageFromServer;
+        CountDownLatch countDownMajority = new CountDownLatch(majority);
+
+        SendMessageThread[] sendMessageThreads = new SendMessageThread[REPLICAS];
+        Thread[] threads = new Thread[REPLICAS];
+
+        for (int i = 0; i < REPLICAS; i++) {
+            sendMessageThreads[i] = new SendMessageThread(messageToServer, PORT + i, countDownMajority);
+            threads[i] = new Thread(sendMessageThreads[i]);
+            threads[i].start();
+        }
+
+        //waits for the majority of replicas to reply with ACK, if return is false it timed out
+        int timeout = 10;
+        if (!countDownMajority.await(timeout, TimeUnit.SECONDS)) {
+            for (int i = 0; i < REPLICAS; i++) {
+                if (!threads[i].isAlive()) {
+                    if (sendMessageThreads[i].getMessageFromServer().getMessageType().equals(ERROR)) {
+                        throw sendMessageThreads[i].getMessageFromServer().getException();
+                    }
+                }
+            }
+            throw new MajorityQuorumTimeoutException("Majority took too long to respond (" + timeout + "s)");
+        }
+
+        //gets first ACKd message and returns it to the client
+        for (int i = 0; i < REPLICAS; i++) {
+            if (!threads[i].isAlive()) {
+
+                if (sendMessageThreads[i].getMessageFromServer().getMessageType().equals(ACK)) {
+                    return sendMessageThreads[i].getMessageFromServer();
+                }
+            }
+        }
+        return null;
     }
 
 

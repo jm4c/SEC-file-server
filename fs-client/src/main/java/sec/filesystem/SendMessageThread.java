@@ -15,6 +15,7 @@ import java.sql.Timestamp;
 import java.util.concurrent.CountDownLatch;
 
 import static types.Message.MessageType.ACK;
+import static types.Message.MessageType.ERROR;
 
 public class SendMessageThread implements Runnable {
     private Message messageToServer;
@@ -41,8 +42,10 @@ public class SendMessageThread implements Runnable {
                 case NC_ACK: //WRITE HEADER FILE
                     if (getTimestampFromData(messageToServer.getData()).equals(messageFromServer.getTimestamp()))
                         messageFromServer.setMessageType(ACK);
-                    else
+                    else {
+                        messageFromServer.setMessageType(ERROR);
                         throw new WrongHeaderSequenceException("Invalid timestamp");
+                    }
                     break;
                 case VALUE: //READ HEADER FILE
                     verifySignedData(messageFromServer.getData(), messageFromServer.getSignature(), messageFromServer.getPublicKey()); //already throws exception if wrong signature

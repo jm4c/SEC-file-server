@@ -334,13 +334,11 @@ public class TCPClient {
 
         SendMessageThread[] sendMessageThreads = new SendMessageThread[REPLICAS];
         Thread[] threads = new Thread[REPLICAS];
-        boolean[] ackList = new boolean[REPLICAS];
 
         for (int i = 0; i < REPLICAS; i++) {
             sendMessageThreads[i] = new SendMessageThread(messageToServer, PORT + i, countDownMajority);
             threads[i] = new Thread(sendMessageThreads[i]);
             threads[i].start();
-            ackList[i] = false;
         }
 
         //waits for the majority of replicas to reply with ACK, if return is false it timed out
