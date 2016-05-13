@@ -1,15 +1,13 @@
 package sec.filesystem;
 
-import interfaces.InterfaceBlockServer;
+import exceptions.IDMismatchException;
 import types.Buffer_t;
+import types.Data_t;
+import types.Id_t;
 import utils.CryptoUtils;
 
-import java.io.FileNotFoundException;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.*;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,14 +15,13 @@ import static interfaces.InterfaceBlockServer.REPLICAS;
 import static javax.xml.bind.DatatypeConverter.printHexBinary;
 
 /*  Demo Class used for demonstrating a client connecting to the File Server, 
-    and issuing a write command on his file, but the server is unable to find
-    the header block assigned to that file.
+    and issuing a read request for content that has suffered data corruption.
 
     Supported runtime arguments:
         -more       Shows more detailed information during runtime.
         -log        Shows the logging of relevant exceptions during runtime.
  */
-public class DemoReadingNonExistentFile {
+public class DemoReadCorruptContentInOneServer {
 
     static PrintStream dummyStream = new PrintStream(new OutputStream() {
         @Override
@@ -66,26 +63,39 @@ public class DemoReadingNonExistentFile {
             // Writing to the file at position 0
             swapOutStream("disable", args);
             String s = "The quick brown fox jumps over the lazy dog";
+            for (int i = 0; i < 7; i++) {
+                s = s.concat(s);
+            }
             buffer.setValue(CryptoUtils.serialize(s));
             int size = buffer.getValue().length;
             swapOutStream("enable", args);
             System.out.println("// [3] Performing a write request ...");
-            System.out.println("// [3] Writing some data of size " + size + " to the file, at pos 0 ...");
+            System.out.println("// [3] Writing some data of size " + buffer.getValue().length + " to the file, at pos 0 ...");
             swapOutStream("disable", args);
-            c.fs_write(0, size, buffer);
+            c.fs_write(0, buffer.getValue().length, buffer);
             String sent = printHexBinary(buffer.getValue());
             swapOutStream("enable", args);
             System.out.println("// [4] Write request has been performed successfully.");
             System.out.println("// [4] Data sent to the file system:\n\t" + sent);
 
-            // Manually getting rid of the header data file.
+            // Manually altering one of the content data files.
             swapOutStream("disable", args);
+            List<Id_t> list = (List<Id_t>) c.getFileList();
 
-            // TODO BUG - CANT REMOVE DUE TO FILE BEING CURRENTLY IN USE
-            for (int i = 0; i< REPLICAS; i++) {
-                final Path path = Paths.get("./../fs-server/files/server" + i + "/" + c.getClientID().getValue() + ".dat");
-                Files.delete(path);
-            }
+            final String path = "./../fs-server/files/server0/" + list.get(0).getValue()+".dat";
+            FileInputStream fin = new FileInputStream(path);
+            ObjectInputStream ois = new ObjectInputStream(fin);
+            Object obj = ois.readObject();
+            Data_t data = (Data_t) obj;
+            byte[] buff = CryptoUtils.serialize("corruption");
+            System.arraycopy(buff, 0, data.getValue(), 0, buff.length);
+            FileOutputStream fout = new FileOutputStream(path);
+            ObjectOutputStream oos = new ObjectOutputStream(fout);
+            oos.writeObject(data);
+            ois.close();
+            oos.close();
+
+
 
             swapOutStream("enable", args);
 
@@ -96,17 +106,6 @@ public class DemoReadingNonExistentFile {
             buffer.setValue(new byte[size]);
             c.fs_read(c.getPublicKey(), 0, size, buffer);
             swapOutStream("enable", args);
-            System.out.println("// [ ] DemoApp has INCORRECTLY terminated.");
-            System.exit(-1);
-            
-        } catch (FileNotFoundException ex) {
-            swapOutStream("enable", args);
-            System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
-            for (String s : args) {
-                if (s.equalsIgnoreCase("-log")) {
-                    Logger.getLogger(DemoReadingNonExistentFile.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
             System.out.println("// [ ] DemoApp has terminated.");
             System.exit(0);
 
@@ -115,7 +114,7 @@ public class DemoReadingNonExistentFile {
             System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
             for (String s : args) {
                 if (s.equalsIgnoreCase("-log")) {
-                    Logger.getLogger(DemoReadingNonExistentFile.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(DemoReadCorruptContentInOneServer.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
             System.out.println("// [ ] DemoApp has INCORRECTLY terminated.");

@@ -1,5 +1,10 @@
 package sec.filesystem;
 
+import interfaces.InterfaceBlockServer;
+import types.Buffer_t;
+import types.Id_t;
+import utils.CryptoUtils;
+
 import java.io.FileNotFoundException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -9,10 +14,9 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static interfaces.InterfaceBlockServer.REPLICAS;
 import static javax.xml.bind.DatatypeConverter.printHexBinary;
-import types.Buffer_t;
-import types.Id_t;
-import utils.CryptoUtils;
 
 /*  Demo Class used for demonstrating a client connecting to the File Server, 
     and issuing read request for content that the file system is unable to 
@@ -81,8 +85,10 @@ public class DemoReadMissingContent {
 
             // Manually getting rid of one of the content data files.
             List<Id_t> list = (List<Id_t>) c.getFileList();
-            final Path path = Paths.get("./../fs-server/files/" + list.get(0).getValue() + ".dat");
-            Files.delete(path);
+            for (int i = 0; i< REPLICAS; i++) {
+                final Path path = Paths.get("./../fs-server/files/server" + i + "/" + list.get(0).getValue() + ".dat");
+                Files.delete(path);
+            }
 
             // Reading all the data that was just written to the file
             System.out.println("// [5] Performing a read request ...");

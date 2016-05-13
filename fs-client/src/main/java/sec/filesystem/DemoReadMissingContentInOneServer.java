@@ -1,7 +1,7 @@
 package sec.filesystem;
 
-import interfaces.InterfaceBlockServer;
 import types.Buffer_t;
+import types.Id_t;
 import utils.CryptoUtils;
 
 import java.io.FileNotFoundException;
@@ -10,21 +10,21 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static interfaces.InterfaceBlockServer.REPLICAS;
 import static javax.xml.bind.DatatypeConverter.printHexBinary;
 
 /*  Demo Class used for demonstrating a client connecting to the File Server, 
-    and issuing a write command on his file, but the server is unable to find
-    the header block assigned to that file.
+    and issuing read request for content that the file system is unable to 
+    locate.
 
     Supported runtime arguments:
         -more       Shows more detailed information during runtime.
         -log        Shows the logging of relevant exceptions during runtime.
  */
-public class DemoReadingNonExistentFile {
+public class DemoReadMissingContentInOneServer {
 
     static PrintStream dummyStream = new PrintStream(new OutputStream() {
         @Override
@@ -60,12 +60,15 @@ public class DemoReadingNonExistentFile {
             swapOutStream("disable", args);
             c.setClientID(c.fs_init());
             swapOutStream("enable", args);
-            System.out.println("// [2] File System has been initialized successfully.");
+            System.out.println("// [2] File System has been initialized sucessfully.");
             System.out.println("// [2] Client ID assigned by the server:\n\t" + c.getClientID().getValue());
 
             // Writing to the file at position 0
             swapOutStream("disable", args);
             String s = "The quick brown fox jumps over the lazy dog";
+            for (int i = 0; i < 7; i++) {
+                s = s.concat(s);
+            }
             buffer.setValue(CryptoUtils.serialize(s));
             int size = buffer.getValue().length;
             swapOutStream("enable", args);
@@ -78,16 +81,10 @@ public class DemoReadingNonExistentFile {
             System.out.println("// [4] Write request has been performed successfully.");
             System.out.println("// [4] Data sent to the file system:\n\t" + sent);
 
-            // Manually getting rid of the header data file.
-            swapOutStream("disable", args);
-
-            // TODO BUG - CANT REMOVE DUE TO FILE BEING CURRENTLY IN USE
-            for (int i = 0; i< REPLICAS; i++) {
-                final Path path = Paths.get("./../fs-server/files/server" + i + "/" + c.getClientID().getValue() + ".dat");
-                Files.delete(path);
-            }
-
-            swapOutStream("enable", args);
+            // Manually getting rid of one of the content data files.
+            List<Id_t> list = (List<Id_t>) c.getFileList();
+            final Path path = Paths.get("./../fs-server/files/server0/" + list.get(0).getValue() + ".dat");
+            Files.delete(path);
 
             // Reading all the data that was just written to the file
             System.out.println("// [5] Performing a read request ...");
@@ -96,26 +93,16 @@ public class DemoReadingNonExistentFile {
             buffer.setValue(new byte[size]);
             c.fs_read(c.getPublicKey(), 0, size, buffer);
             swapOutStream("enable", args);
-            System.out.println("// [ ] DemoApp has INCORRECTLY terminated.");
-            System.exit(-1);
-            
-        } catch (FileNotFoundException ex) {
-            swapOutStream("enable", args);
-            System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
-            for (String s : args) {
-                if (s.equalsIgnoreCase("-log")) {
-                    Logger.getLogger(DemoReadingNonExistentFile.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
             System.out.println("// [ ] DemoApp has terminated.");
             System.exit(0);
+
 
         } catch (Exception ex) {
             swapOutStream("enable", args);
             System.err.println("// [ ] [Catch] Exception:\n\t" + ex.getMessage());
             for (String s : args) {
                 if (s.equalsIgnoreCase("-log")) {
-                    Logger.getLogger(DemoReadingNonExistentFile.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(DemoReadMissingContentInOneServer.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
             System.out.println("// [ ] DemoApp has INCORRECTLY terminated.");

@@ -1,8 +1,8 @@
 package sec.filesystem;
 
 import exceptions.InvalidSignatureException;
+import exceptions.TCPServerException;
 import exceptions.WrongHeaderSequenceException;
-import interfaces.InterfaceBlockServer;
 import types.*;
 import types.Message.MessageType;
 import utils.CryptoUtils;
@@ -15,7 +15,6 @@ import java.sql.Timestamp;
 import java.util.concurrent.CountDownLatch;
 
 import static types.Message.MessageType.ACK;
-import static types.Message.MessageType.NC_ACK;
 
 public class SendMessageThread implements Runnable{
     private Message messageToServer;
@@ -33,8 +32,6 @@ public class SendMessageThread implements Runnable{
 
     @Override
     public void run() {
-        System.out.println("Sends message to server" + (port-InterfaceBlockServer.PORT));
-
         try {
             messageFromServer = TCPClient.sendMessageToServer(messageToServer, port);
 
@@ -49,18 +46,20 @@ public class SendMessageThread implements Runnable{
                     break;
                 case VALUE: //READ HEADER FILE
                     verifySignedData(messageFromServer.getData(), messageFromServer.getSignature(), messageFromServer.getPublicKey()); //already throws exception if wrong signature
+                    messageFromServer.setMessageType(ACK);
                     break;
+                case ERROR:
+                    return;
                 default:
             }
 
 
             if(messageFromServer.getMessageType().equals(ACK))
                 countdownMajority.countDown(); //valid ACK
-
-            System.out.println("Receives message from server" + (port-InterfaceBlockServer.PORT));
-
+            else
+                throw new TCPServerException("MessageType not an ACK [" + messageFromServer.getMessageType().toString() +"]");
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(e.getClass().getName());
             messageFromServer = new Message.MessageBuilder(MessageType.ERROR)
                     .error(e)
                     .createMessage();

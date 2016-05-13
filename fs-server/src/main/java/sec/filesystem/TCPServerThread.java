@@ -51,7 +51,6 @@ class TCPServerThread {
                         id = server.put_h(data);
                         messageToClient = new MessageBuilder(ACK)
                                 .id(id)
-                                .timestamp(getTimestampFromFile(id))
                                 .createMessage();
                         break;
                     case PUT_K:

@@ -1,29 +1,22 @@
 package sec.filesystem;
 
+import exceptions.WrongHeaderSequenceException;
+import interfaces.InterfaceBlockServer;
+import types.*;
+import utils.CryptoUtils;
+
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.Socket;
-import java.rmi.NotBoundException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.security.KeyPair;
 import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import eIDlib_PKCS11.EIDLib_PKCS11;
-import exceptions.WrongHeaderSequenceException;
-import interfaces.InterfaceBlockServer;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import pteidlib.PteidException;
-import sun.security.pkcs11.wrapper.PKCS11;
-import types.*;
-import utils.CryptoUtils;
 
 
 /*  Demo Class used for demonstrating a client connecting to the File Server, 

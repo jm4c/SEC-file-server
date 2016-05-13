@@ -1,12 +1,9 @@
 package sec.filesystem;
 
-import blocks.PublicKeyBlock;
 import exceptions.IDMismatchException;
-import exceptions.InvalidSignatureException;
 import exceptions.MajorityQuorumTimeoutException;
 import exceptions.NullContentException;
 import interfaces.InterfaceBlockServer;
-
 import types.*;
 import utils.CryptoUtils;
 import utils.HashUtils;
@@ -16,15 +13,18 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.security.*;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static interfaces.InterfaceBlockServer.*;
-import static types.Message.*;
+import static interfaces.InterfaceBlockServer.BLOCK_MAX_SIZE;
+import static interfaces.InterfaceBlockServer.REPLICAS;
+import static types.Message.MessageBuilder;
 import static types.Message.MessageType.*;
 
 public class TCPClient {
@@ -249,12 +249,6 @@ public class TCPClient {
 
         System.out.println(this.getClientID().getValue());
 
-//REPLICA CODE BLOCK
-        //  Read the serverList file
-        FileInputStream fin = new FileInputStream(SERVERLISTPATH);
-        ObjectInputStream ois = new ObjectInputStream(fin);
-        ArrayList<String> serverList = (ArrayList) ois.readObject();
-
         //Registry myReg = LocateRegistry.getRegistry("localhost");
         //System.out.println("Contacting fs." + servername);
 //            try {
@@ -460,9 +454,17 @@ public class TCPClient {
         }
 
         //waits for the majority of replicas to reply with ACK, if return is false it timed out
-        int timeout = 60;
-        if(!countDownMajority.await(timeout,TimeUnit.SECONDS))
-            throw new MajorityQuorumTimeoutException("Majority took too long to respond (" + timeout +"s)");
+        int timeout = 10;
+        if(!countDownMajority.await(timeout,TimeUnit.SECONDS)) {
+            for (int i = 0; i< REPLICAS; i++) {
+                if(!threads[i].isAlive()){
+                    if (sendMessageThreads[i].getMessageFromServer().getMessageType().equals(ERROR)) {
+                        throw sendMessageThreads[i].getMessageFromServer().getException();
+                    }
+                }
+            }
+            throw new MajorityQuorumTimeoutException("Majority took too long to respond (" + timeout + "s)");
+        }
 
         //gets first ACKd message and returns it to the client
         for (int i = 0; i< REPLICAS; i++) {

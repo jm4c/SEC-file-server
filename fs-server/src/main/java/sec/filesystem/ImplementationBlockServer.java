@@ -123,17 +123,17 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         ObjectInputStream ois = new ObjectInputStream(fin);
         Object obj = ois.readObject();
         if (obj instanceof PublicKeyBlock) {
-            System.out.println("\nGot header from:./files/server" + serverID + "/" + s + ".dat");
+            System.out.println("\n[Server" + serverID+"] Got header from:./files/server" + serverID + "/" + s + ".dat");
             b = (PublicKeyBlock) obj;
             ois.close();
             if (!verifyIntegrity(b)) {
                 throw new InvalidSignatureException("Invalid signature.");
             } else {
-                System.out.println("Valid signature");
+                System.out.println("[Server" + serverID+"] Valid signature");
             }
             return b.getData();
         } else {
-            System.out.println("Got content from:./files/server" + serverID + "/" + s + ".dat");
+            System.out.println("[Server" + serverID+"] Got content from:./files/server" + serverID + "/" + s + ".dat");
             Data_t data = (Data_t) obj;
             ois.close();
             String blockID = calculateBlockID(data).getValue();
@@ -148,7 +148,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
     public Id_t put_k(Data_t data, Sig_t signature, Pk_t public_key) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, InvalidSignatureException, IOException, ClassNotFoundException, IDMismatchException, WrongHeaderSequenceException {
 
         verifySignedData(data, signature, public_key);
-        System.out.println("signature is valid");
+        System.out.println("[Server" + serverID+"] signature is valid");
 
         Id_t id = calculateBlockID(public_key);
 
@@ -161,9 +161,9 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         //check timestamp, in order to defend against replay attacks
         if (headerAlreadyExists) {
             Timestamp oldTimestamp = getTimestampFromFileByID(id);
-            System.out.println("OLD: " + oldTimestamp.toString());
+            System.out.println("[Server" + serverID+"] OLD: " + oldTimestamp.toString());
             Timestamp newTimestamp = getTimestampFromData(data);
-            System.out.println("NEW: " + newTimestamp.toString());
+            System.out.println("[Server" + serverID+"] NEW: " + newTimestamp.toString());
             if (!newTimestamp.after(oldTimestamp)) {
                 throw new WrongHeaderSequenceException("New header's timestamp: "
                         + newTimestamp.toString() + "\n"
@@ -173,13 +173,13 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
 
         }
 
-        System.out.println(id.getValue());
+        System.out.println("[Server" + serverID + "]" + id.getValue());
         PublicKeyBlock b = new PublicKeyBlock(data, signature, public_key);
 
         String s = id.getValue();
         new File("./files/server" + serverID + "/").mkdirs();
         FileOutputStream fout = new FileOutputStream("./files/server" + serverID + "/" + s + ".dat");
-        System.out.println("Stored header in:./files/server" + serverID + "/" + s + ".dat");
+        System.out.println("[Server" + serverID+"] Stored header in:./files/server" + serverID + "/" + s + ".dat");
 
         ObjectOutputStream oos = new ObjectOutputStream(fout);
         oos.writeObject(b);
@@ -208,7 +208,7 @@ public class ImplementationBlockServer extends UnicastRemoteObject implements In
         String s = id.getValue();
         new File("./files/server" + serverID + "/").mkdirs();
         FileOutputStream fout = new FileOutputStream("./files/server" + serverID + "/" + s + ".dat");
-        System.out.println("Stored content in:./files/server" + serverID + "/" + s + ".dat");
+        System.out.println("[Server" + serverID+"] Stored content in:./files/server" + serverID + "/" + s + ".dat");
 
         ObjectOutputStream oos = new ObjectOutputStream(fout);
         oos.writeObject(data);

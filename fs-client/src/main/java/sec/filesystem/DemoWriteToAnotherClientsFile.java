@@ -1,14 +1,16 @@
 package sec.filesystem;
 
 import exceptions.InvalidSignatureException;
+import types.Buffer_t;
+import utils.CryptoUtils;
+
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import static javax.xml.bind.DatatypeConverter.printHexBinary;
-import types.Buffer_t;
-import utils.CryptoUtils;
 
 /*  Demo Class used for demonstrating a client connecting to the File Server, 
     and issuing a write command on a file that does not belong to him.

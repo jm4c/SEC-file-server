@@ -1,20 +1,21 @@
 package sec.filesystem;
 
 import exceptions.IDMismatchException;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.PrintStream;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import static javax.xml.bind.DatatypeConverter.printHexBinary;
 import types.Buffer_t;
 import types.Data_t;
 import types.Id_t;
 import utils.CryptoUtils;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static interfaces.InterfaceBlockServer.REPLICAS;
+import static javax.xml.bind.DatatypeConverter.printHexBinary;
 
 /*  Demo Class used for demonstrating a client connecting to the File Server, 
     and issuing a read request for content that has suffered data corruption.
@@ -83,18 +84,22 @@ public class DemoReadCorruptContent {
             // Manually altering one of the content data files.
             swapOutStream("disable", args);
             List<Id_t> list = (List<Id_t>) c.getFileList();
-            final String path = "./../fs-server/files/"+list.get(0).getValue()+".dat";
-            FileInputStream fin = new FileInputStream(path);
-            ObjectInputStream ois = new ObjectInputStream(fin);
-            Object obj = ois.readObject();
-            Data_t data = (Data_t) obj;
-            byte[] buff = CryptoUtils.serialize("corruption");
-            System.arraycopy(buff, 0, data.getValue(), 0, buff.length);
-            FileOutputStream fout = new FileOutputStream(path);
-            ObjectOutputStream oos = new ObjectOutputStream(fout);
-            oos.writeObject(data);
-            ois.close();
-            oos.close();
+            for (int i = 0; i< REPLICAS; i++) {
+                final String path = "./../fs-server/files/server" + i + "/" + list.get(0).getValue()+".dat";
+                FileInputStream fin = new FileInputStream(path);
+                ObjectInputStream ois = new ObjectInputStream(fin);
+                Object obj = ois.readObject();
+                Data_t data = (Data_t) obj;
+                byte[] buff = CryptoUtils.serialize("corruption");
+                System.arraycopy(buff, 0, data.getValue(), 0, buff.length);
+                FileOutputStream fout = new FileOutputStream(path);
+                ObjectOutputStream oos = new ObjectOutputStream(fout);
+                oos.writeObject(data);
+                ois.close();
+                oos.close();
+
+            }
+
             swapOutStream("enable", args);
             
             // Reading all the data that was just written to the file

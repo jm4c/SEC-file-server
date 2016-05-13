@@ -4,6 +4,11 @@ import eIDlib_PKCS11.EIDLib_PKCS11;
 import exceptions.IDMismatchException;
 import exceptions.NullContentException;
 import interfaces.InterfaceBlockServer;
+import pteidlib.PteidException;
+import sun.security.pkcs11.wrapper.PKCS11;
+import types.*;
+import utils.CryptoUtils;
+import utils.HashUtils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -19,11 +24,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import pteidlib.PteidException;
-import sun.security.pkcs11.wrapper.PKCS11;
-import types.*;
-import utils.CryptoUtils;
-import utils.HashUtils;
 
 public class Library {
 
